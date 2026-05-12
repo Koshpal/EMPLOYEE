@@ -7,6 +7,7 @@ import {
   X,
   ChevronLeft,
   BookOpen,
+  TrendingUp,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -21,6 +22,7 @@ const menuItems = [
   { icon: Users, label: 'Coaches', path: '/coaches' },
   { icon: BookOpen, label: 'Sessions', path: '/sessions' },
   { icon: Calendar, label: 'Calendar', path: '/calendar' },
+  { icon: TrendingUp, label: 'Finance', path: '/finance' },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -32,7 +34,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) =>
+    path === '/finance'
+      ? location.pathname.startsWith('/finance')
+      : location.pathname === path;
 
   return (
     <>
