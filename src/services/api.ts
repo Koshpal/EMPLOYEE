@@ -9,17 +9,13 @@ export const axiosInstance: AxiosInstance = axios.create({
   baseURL: BASE_URL,
   timeout: 30000,
   headers: { 'Content-Type': 'application/json' },
+  // withCredentials sends httpOnly cookies automatically — no localStorage needed
   withCredentials: true,
 });
 
+// No request interceptor needed: the browser sends the httpOnly cookie automatically
 axiosInstance.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('token');
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
+  (config: InternalAxiosRequestConfig) => config,
   (error) => Promise.reject(error),
 );
 
@@ -31,20 +27,11 @@ axiosInstance.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        const refreshResponse = await axios.post(
-          `${BASE_URL}/auth/refresh`,
-          {},
-          { withCredentials: true },
-        );
-        if (refreshResponse.status === 200) {
-          if (refreshResponse.data?.accessToken) {
-            localStorage.setItem('token', refreshResponse.data.accessToken);
-          }
-          return axiosInstance(originalRequest);
-        }
+        // Refresh call sends httpOnly refreshToken cookie automatically
+        await axios.post(`${BASE_URL}/auth/refresh`, {}, { withCredentials: true });
+        return axiosInstance(originalRequest);
       } catch {
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
+        // Refresh failed — redirect to login
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';
         }
