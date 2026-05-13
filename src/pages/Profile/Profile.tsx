@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from '../../components/common/Layout';
 import { employeeService } from '../../services/employee.service';
 import type { UserProfile } from '../../types/employee.types';
@@ -13,6 +13,8 @@ const Profile: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   // Password modal state
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -71,6 +73,33 @@ const Profile: React.FC = () => {
     }
   };
 
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type)) {
+      setMessage({ text: 'Only JPG, PNG or WebP images are allowed.', type: 'error' });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ text: 'Image must be under 5 MB.', type: 'error' });
+      return;
+    }
+    setPhotoUploading(true);
+    setMessage(null);
+    try {
+      const fd = new FormData();
+      fd.append('image', file);
+      const updated = await employeeService.updateProfile(fd);
+      setProfile((prev) => prev ? { ...prev, profilePicture: updated.profilePicture || prev.profilePicture } : prev);
+      setMessage({ text: 'Profile photo updated!', type: 'success' });
+    } catch {
+      setMessage({ text: 'Failed to upload photo.', type: 'error' });
+    } finally {
+      setPhotoUploading(false);
+      if (photoInputRef.current) photoInputRef.current.value = '';
+    }
+  };
+
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -108,16 +137,30 @@ const Profile: React.FC = () => {
           <div className="px-8 pb-8">
             <div className="relative -mt-12 flex flex-col md:flex-row md:items-end gap-6">
               <div className="relative group">
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handlePhotoChange}
+                />
                 <div className="w-32 h-32 rounded-3xl bg-[var(--color-bg-card)] p-1 shadow-xl">
                   <div className="w-full h-full rounded-2xl bg-[var(--color-bg-tertiary)] overflow-hidden flex items-center justify-center">
-                    {profile?.profilePicture ? (
+                    {photoUploading ? (
+                      <Loader2 className="w-10 h-10 animate-spin text-[var(--color-primary)]" />
+                    ) : profile?.profilePicture ? (
                       <img src={profile.profilePicture} alt={profile.name} className="w-full h-full object-cover" />
                     ) : (
                       <User className="w-16 h-16 text-[var(--color-primary)]" />
                     )}
                   </div>
                 </div>
-                <button className="absolute bottom-2 right-2 p-2 bg-[var(--color-primary)] text-white rounded-xl shadow-lg hover:scale-110 transition-all">
+                <button
+                  type="button"
+                  disabled={photoUploading}
+                  onClick={() => photoInputRef.current?.click()}
+                  className="absolute bottom-2 right-2 p-2 bg-[var(--color-primary)] text-white rounded-xl shadow-lg hover:scale-110 transition-all disabled:opacity-50"
+                >
                   <Camera className="w-4 h-4" />
                 </button>
               </div>

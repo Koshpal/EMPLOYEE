@@ -34,7 +34,7 @@ const Login: React.FC = () => {
       <div className="bg-[var(--color-bg-card)] rounded-2xl shadow-xl p-8 w-full max-w-md border border-[var(--color-border-primary)] animate-slide-up">
         {/* Logo and Brand */}
         <div className="flex items-center gap-2 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-[var(--color-primary)] flex items-center justify-center">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl">
             <img src="/logo.png" alt="logo" className="w-8 h-8" />
           </div>
           <span className="text-2xl font-bold text-[var(--color-text-primary)] font-heading">
