@@ -31,14 +31,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const response = await employeeService.login(credentials);
     setUser(response.user);
     localStorage.setItem('user', JSON.stringify(response.user));
-    if (response.accessToken) {
-      localStorage.setItem('token', response.accessToken);
-    }
   };
 
   const logout = () => {
     localStorage.removeItem('user');
-    localStorage.removeItem('token');
     setUser(null);
     window.location.href = '/login';
   };

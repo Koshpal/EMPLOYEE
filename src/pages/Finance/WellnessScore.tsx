@@ -153,7 +153,7 @@ export default function WellnessScore() {
                 <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: 'var(--color-text-tertiary)' }} tickLine={false} axisLine={false} />
                 <Tooltip
                   contentStyle={{ backgroundColor: 'var(--color-bg-card)', border: '1px solid var(--color-border-primary)', borderRadius: 12, fontSize: 12 }}
-                  formatter={(v: number) => [v, 'Score']}
+                  formatter={(v) => [Number(v ?? 0), 'Score']}
                 />
                 <Line type="monotone" dataKey="Score" stroke="#334eac" strokeWidth={2.5} dot={{ r: 4, fill: '#334eac' }} />
               </LineChart>

@@ -104,7 +104,7 @@ export function AddTransactionModal({ onClose, onSuccess }: Props) {
                     type === t
                       ? t === 'INCOME'
                         ? 'bg-[var(--color-success-bg)] text-[var(--color-success-dark)]'
-                        : 'bg-red-50 text-red-600'
+                        : 'bg-[var(--color-error)]/10 text-[var(--color-error-dark)]'
                       : 'text-[var(--color-text-tertiary)]'
                   }`}
                 >
@@ -226,7 +226,7 @@ export function AddTransactionModal({ onClose, onSuccess }: Props) {
             </div>
 
             {error && (
-              <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+              <p className="text-xs text-[var(--color-error-dark)] bg-[var(--color-error)]/10 rounded-lg px-3 py-2">{error}</p>
             )}
 
             {/* Submit */}

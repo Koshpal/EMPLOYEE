@@ -102,7 +102,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, s
             </span>
           )}
           {transaction.isEMI && (
-            <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">
+            <span className="text-xs px-1.5 py-0.5 rounded-full bg-[var(--color-error)]/15 text-[var(--color-error-dark)] font-medium">
               EMI
             </span>
           )}

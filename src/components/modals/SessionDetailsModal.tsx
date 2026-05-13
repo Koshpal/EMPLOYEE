@@ -38,6 +38,7 @@ export const SessionDetailsModal: React.FC<SessionDetailsModalProps> = ({
   const [hoveredRating, setHoveredRating] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [notes, setNotes] = useState<SessionNotes | null>(null);
   const [loadingNotes, setLoadingNotes] = useState(false);
 
@@ -68,10 +69,11 @@ export const SessionDetailsModal: React.FC<SessionDetailsModalProps> = ({
 
   const handleSubmitFeedback = async () => {
     if (rating === 0) {
-      alert('Please select a rating');
+      setSubmitError('Please select a star rating to continue.');
       return;
     }
 
+    setSubmitError(null);
     setSubmitting(true);
     try {
       await coachService.submitFeedback(session.id, {
@@ -88,7 +90,7 @@ export const SessionDetailsModal: React.FC<SessionDetailsModalProps> = ({
       }, 1500);
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      alert('Failed to submit feedback. Please try again.');
+      setSubmitError('Failed to submit feedback. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -229,7 +231,7 @@ export const SessionDetailsModal: React.FC<SessionDetailsModalProps> = ({
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
                           key={star}
-                          onClick={() => setRating(star)}
+                          onClick={() => { setRating(star); setSubmitError(null); }}
                           onMouseEnter={() => setHoveredRating(star)}
                           onMouseLeave={() => setHoveredRating(0)}
                           className="transition-transform hover:scale-110"
@@ -245,6 +247,10 @@ export const SessionDetailsModal: React.FC<SessionDetailsModalProps> = ({
                       ))}
                     </div>
                   </div>
+
+                  {submitError && (
+                    <p className="text-sm text-[var(--color-error)] bg-[var(--color-error)]/10 px-3 py-2 rounded-xl">{submitError}</p>
+                  )}
 
                   {/* Feedback Section */}
                   <div className="space-y-3">

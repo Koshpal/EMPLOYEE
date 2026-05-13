@@ -20,6 +20,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookingError, setBookingError] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
   const [datesWithSlots, setDatesWithSlots] = useState<Set<string>>(new Set());
 
@@ -100,6 +101,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
   const handleBook = async () => {
     if (!selectedSlot || !coach) return;
     setBookingLoading(true);
+    setBookingError(null);
     try {
       await coachService.bookConsultation(
         coach.id,
@@ -108,18 +110,16 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
         notes
       );
       setCurrentStep(3);
-      // Refetch slots to ensure UI is up-to-date
       if (selectedDate) {
         fetchSlotsForDate();
       }
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Booking failed:', error);
-      // Refetch slots after failed booking to ensure slot list is current
       if (selectedDate) {
         await fetchSlotsForDate();
       }
-      alert('Failed to book session. Please try again.');
+      setBookingError(error?.response?.data?.message || 'Failed to book session. Please try again.');
     } finally {
       setBookingLoading(false);
     }
@@ -240,10 +240,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
                             className={`w-full p-4 rounded-2xl border text-left transition-all flex items-center justify-between group cursor-pointer
                               ${isSelected ?
                                 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white' :
-                                'bg-gray-200 border-gray-300 text-gray-700 hover:bg-gray-300'}`}
+                                'bg-[var(--color-bg-secondary)] border-[var(--color-border-primary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)]'}`}
                           >
                             <div className="flex items-center gap-3">
-                              <Clock className={`w-5 h-5 ${isSelected ? 'text-white' : 'text-gray-600'}`} />
+                              <Clock className={`w-5 h-5 ${isSelected ? 'text-white' : 'text-[var(--color-text-secondary)]'}`} />
                               <span className="font-bold">{formatTime(slot.startTime)}</span>
                             </div>
                             {isSelected && <Check className="w-5 h-5" />}
@@ -308,6 +308,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
                 <Video className="w-5 h-5 flex-shrink-0" />
                 <p>A meeting link will be automatically generated and shared with you.</p>
               </div>
+
+              {bookingError && (
+                <p className="text-sm text-[var(--color-error)] bg-[var(--color-error)]/10 px-4 py-3 rounded-2xl">{bookingError}</p>
+              )}
             </div>
           )}
 
@@ -335,9 +339,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
             {currentStep === 1 ? (
               <Button variant="secondary" className="flex-1" onClick={onClose}>Cancel</Button>
             ) : (
-              <Button variant="secondary" className="flex-1" onClick={() => setCurrentStep(1)}>Back</Button>
+              <Button variant="secondary" className="flex-1" onClick={() => { setCurrentStep(1); setBookingError(null); }}>Back</Button>
             )}
-            
+
             {currentStep === 1 ? (
               <Button 
                 variant="primary" 

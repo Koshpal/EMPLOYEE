@@ -37,10 +37,10 @@ const SEVERITY_STYLES: Record<InsightSeverity, { bg: string; border: string; ico
     badge: 'bg-[var(--color-warning-bg)] text-[var(--color-warning-dark)]',
   },
   ALERT: {
-    bg: 'bg-red-50 dark:bg-red-900/10',
+    bg: 'bg-[var(--color-error)]/10',
     border: 'border-[var(--color-error-light)]',
     icon: 'text-[var(--color-error-dark)]',
-    badge: 'bg-red-100 text-[var(--color-error-dark)]',
+    badge: 'bg-[var(--color-error)]/15 text-[var(--color-error-dark)]',
   },
 };
 
