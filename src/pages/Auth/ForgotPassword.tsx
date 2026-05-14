@@ -59,8 +59,8 @@ const ForgotPassword = () => {
     <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-[var(--color-bg-card)] rounded-[2rem] shadow-2xl p-8 border border-[var(--color-border-primary)] animate-fade-in">
         <div className="flex items-center gap-3 mb-10">
-          <div className="w-10 h-10 bg-[var(--color-primary)] rounded-xl flex items-center justify-center shadow-lg shadow-[var(--color-primary)]/30">
-            <Lock className="w-5 h-5 text-white" />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shadow-[var(--color-primary)]/30">
+            <img src="/logo.png" alt="" />
           </div>
           <span className="text-2xl font-black text-[var(--color-text-primary)] font-heading tracking-tight">Koshpal</span>
         </div>
