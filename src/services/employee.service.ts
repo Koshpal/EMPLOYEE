@@ -7,6 +7,19 @@ export const employeeService = {
     return response.data;
   },
 
+  getCurrentUser: async (): Promise<AuthResponse['user']> => {
+    const response = await axiosInstance.get('/auth/me');
+    return response.data;
+  },
+
+  logout: async (): Promise<void> => {
+    try {
+      await axiosInstance.post('/auth/logout');
+    } finally {
+      localStorage.removeItem('user');
+    }
+  },
+
   forgotPassword: async (email: string) => {
     const response = await axiosInstance.post('/auth/forgot-password', {
       email,

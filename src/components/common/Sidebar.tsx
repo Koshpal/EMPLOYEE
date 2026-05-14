@@ -57,12 +57,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="flex items-center justify-between px-6 border-b border-[var(--color-border-primary)] h-[89px]">
             {!isCollapsed && (
               <div className="flex items-center gap-3 transition-opacity duration-500">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center">
-                  <img src="/logo.png" alt="logo" className="w-8 h-8" />
+                <div className="w-10 h-10 flex items-center justify-center">
+                  <img src="/logo.png" alt="Koshpal" className="w-8 h-8" />
                 </div>
-                <span className="text-h3 text-[var(--color-text-primary)]">
-                  Koshpal
+                <span className="text-xl font-bold text-(--color-text-primary) font-heading tracking-tight">
+                  Koshpal <span className="text-(--color-primary)">Employee</span>
                 </span>
+              </div>
+            )}
+            {isCollapsed && (
+              <div className="w-10 h-10 flex items-center justify-center mx-auto">
+                <img src="/logo.png" alt="Koshpal" className="w-8 h-8" />
               </div>
             )}
 

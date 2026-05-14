@@ -6,7 +6,7 @@ interface AuthContextType {
   user: AuthResponse['user'] | null;
   loading: boolean;
   login: (credentials: any) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -16,15 +16,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        localStorage.removeItem('user');
+    const initAuth = async () => {
+      // Fast path: restore from localStorage (same-portal login)
+      const raw = localStorage.getItem('user');
+      if (raw) {
+        try {
+          setUser(JSON.parse(raw));
+          setLoading(false);
+          return;
+        } catch {
+          localStorage.removeItem('user');
+        }
       }
-    }
-    setLoading(false);
+
+      // Slow path: localStorage empty — check the shared .koshpal.com cookie.
+      // This fires when the user was redirected here from the landing page after
+      // logging in there. The httpOnly cookie is already set for .koshpal.com and
+      // the browser sends it automatically (withCredentials: true).
+      try {
+        const me = await employeeService.getCurrentUser();
+        if (me && (me as any).role === 'EMPLOYEE') {
+          setUser(me);
+          localStorage.setItem('user', JSON.stringify(me));
+        }
+      } catch {
+        // Not authenticated — ProtectedRoute will redirect to /login
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void initAuth();
   }, []);
 
   const login = async (credentials: any) => {
@@ -33,8 +55,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('user', JSON.stringify(response.user));
   };
 
-  const logout = () => {
-    localStorage.removeItem('user');
+  const logout = async () => {
+    await employeeService.logout(); // revokes refresh token + clears cookie
     setUser(null);
     window.location.href = '/login';
   };
