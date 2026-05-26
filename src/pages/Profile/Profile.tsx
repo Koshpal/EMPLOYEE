@@ -29,6 +29,10 @@ const Profile: React.FC = () => {
     name: '',
     phone: '',
   });
+  const [phoneError, setPhoneError] = useState('');
+  const [emailAlertsEnabled, setEmailAlertsEnabled] = useState(
+    () => localStorage.getItem('employee_email_alerts') !== 'false'
+  );
 
   useEffect(() => {
     fetchProfile();
@@ -100,8 +104,33 @@ const Profile: React.FC = () => {
     }
   };
 
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const sanitized = e.target.value.replace(/[^\d\s+\-()]/g, '');
+    setFormData({ ...formData, phone: sanitized });
+    if (sanitized && !/^[+\d\s\-()]{7,20}$/.test(sanitized)) {
+      setPhoneError('Enter a valid phone number (7–20 digits).');
+    } else {
+      setPhoneError('');
+    }
+  };
+
+  const handleEmailAlertsToggle = () => {
+    const next = !emailAlertsEnabled;
+    setEmailAlertsEnabled(next);
+    localStorage.setItem('employee_email_alerts', String(next));
+  };
+
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (phoneError) {
+      setMessage({ text: 'Please fix the phone number before saving.', type: 'error' });
+      return;
+    }
+    if (formData.phone && !/^[+\d\s\-()]{7,20}$/.test(formData.phone.trim())) {
+      setPhoneError('Enter a valid phone number (7–20 digits).');
+      setMessage({ text: 'Please fix the phone number before saving.', type: 'error' });
+      return;
+    }
     setSaving(true);
     setMessage(null);
     try {
@@ -215,14 +244,18 @@ const Profile: React.FC = () => {
                     <label className="block text-sm font-bold text-[var(--color-text-primary)] mb-2">Phone Number</label>
                     <div className="relative">
                       <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
-                      <input 
-                        type="tel" 
+                      <input
+                        type="tel"
                         value={formData.phone}
-                        onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                        onChange={handlePhoneChange}
                         placeholder="+91 00000 00000"
-                        className="w-full pl-11 pr-4 py-3 rounded-2xl bg-[var(--color-bg-tertiary)] border border-[var(--color-border-primary)] outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all"
+                        maxLength={20}
+                        className={`w-full pl-11 pr-4 py-3 rounded-2xl bg-[var(--color-bg-tertiary)] border outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)] transition-all ${phoneError ? 'border-[var(--color-error)]' : 'border-[var(--color-border-primary)]'}`}
                       />
                     </div>
+                    {phoneError && (
+                      <p className="mt-1 text-xs text-[var(--color-error)]">{phoneError}</p>
+                    )}
                   </div>
                 </div>
 
@@ -281,8 +314,15 @@ const Profile: React.FC = () => {
                     <p className="font-bold text-[var(--color-text-primary)]">Email Alerts</p>
                     <p className="text-xs text-[var(--color-text-secondary)]">Session reminders</p>
                   </div>
-                  <button className="relative w-12 h-6 rounded-full bg-[var(--color-primary)]">
-                    <div className="absolute top-1 left-7 w-4 h-4 rounded-full bg-white" />
+                  <button
+                    type="button"
+                    onClick={handleEmailAlertsToggle}
+                    role="switch"
+                    aria-checked={emailAlertsEnabled}
+                    aria-label="Toggle email alerts"
+                    className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${emailAlertsEnabled ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-grey-lightest)]'}`}
+                  >
+                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${emailAlertsEnabled ? 'left-7' : 'left-1'}`} />
                   </button>
                 </div>
               </div>

@@ -57,10 +57,14 @@ const Dashboard: React.FC = () => {
               Here's an overview of your professional growth and coaching sessions.
             </p>
           </div>
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-success-bg)] text-[var(--color-success-dark)] font-semibold border border-[var(--color-success-light)]">
-            <CheckCircle className="w-4 h-4" />
-            <span>Profile 100% Complete</span>
-          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/profile')}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-(--color-primary)/10 text-(--color-primary) font-semibold border border-(--color-primary)/20 hover:bg-(--color-primary)/20 transition-colors text-sm"
+          >
+            <Users className="w-4 h-4" />
+            <span>View Profile</span>
+          </button>
         </div>
 
         {/* Stats Grid */}

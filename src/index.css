@@ -229,6 +229,8 @@ body {
   font-size: 0.875rem;
   font-weight: 400;
   line-height: 1.25rem;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -355,8 +357,11 @@ h1, h2, h3, h4, h5, h6 {
   font-variant-numeric: tabular-nums;
 }
 
-/* Smooth transitions for theme changes */
-* {
+/* Smooth transitions for theme changes — scoped to layout elements only */
+body, header, aside, nav, main, footer, section, article, .bg-card,
+[class*="bg-[var(--color-bg"], [class*="bg-[var(--color-primary"],
+[class*="bg-[var(--color-secondary"], [class*="border-[var(--color"],
+[class*="text-[var(--color"] {
   transition: background-color var(--transition-base), color var(--transition-base),
     border-color var(--transition-base);
 }

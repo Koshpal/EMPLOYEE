@@ -213,7 +213,17 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
                   </div>
                 </div>
                 <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-[var(--color-text-tertiary)] mb-2">
-                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => <div key={d}>{d}</div>)}
+                  {[
+                    { abbr: 'S', full: 'Sunday' },
+                    { abbr: 'M', full: 'Monday' },
+                    { abbr: 'T', full: 'Tuesday' },
+                    { abbr: 'W', full: 'Wednesday' },
+                    { abbr: 'T', full: 'Thursday' },
+                    { abbr: 'F', full: 'Friday' },
+                    { abbr: 'S', full: 'Saturday' },
+                  ].map(({ abbr, full }) => (
+                    <div key={full} aria-label={full} title={full}>{abbr}</div>
+                  ))}
                 </div>
                 <div className="grid grid-cols-7 gap-1">
                   {renderCalendar()}
