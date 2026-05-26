@@ -5,6 +5,7 @@ export interface Coach {
   expertise: string[];
   bio: string;
   rating: number;
+  totalFeedback: number;
   successRate: number;
   clientsHelped: number;
   location: string;
