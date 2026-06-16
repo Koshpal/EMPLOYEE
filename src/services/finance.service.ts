@@ -9,6 +9,9 @@ import type {
   MonthlyTrend,
   Transaction,
   SyncStatus,
+  FinancialGoal,
+  CreateGoalPayload,
+  UpdateGoalPayload,
 } from '../types/finance.types';
 
 const BASE = '/finance';
@@ -138,6 +141,26 @@ export const updateConsent = async (dto: Partial<FinancialConsent>): Promise<Fin
 
 export const revokeConsent = async (): Promise<void> => {
   await axiosInstance.delete(`${BASE}/consent/revoke`);
+};
+
+// --- Financial Goals ---
+export const getGoals = async (): Promise<FinancialGoal[]> => {
+  const res = await axiosInstance.get('/employee/goals');
+  return res.data.financialGoals ?? [];
+};
+
+export const createGoal = async (payload: CreateGoalPayload): Promise<FinancialGoal> => {
+  const res = await axiosInstance.post('/employee/goals', payload);
+  return res.data;
+};
+
+export const updateGoal = async (goalId: string, payload: UpdateGoalPayload): Promise<FinancialGoal> => {
+  const res = await axiosInstance.put(`/employee/goals/${goalId}`, payload);
+  return res.data;
+};
+
+export const deleteGoal = async (goalId: string): Promise<void> => {
+  await axiosInstance.delete(`/employee/goals/${goalId}`);
 };
 
 // --- SMS Sync ---

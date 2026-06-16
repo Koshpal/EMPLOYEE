@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   BookOpen,
   TrendingUp,
+  Target,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -96,33 +97,52 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {menuItems.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.path);
+                const isFinance = item.path === '/finance';
+                const financeActive = location.pathname.startsWith('/finance');
 
                 return (
-                  <li key={item.path}>
-                    <button
-                      onClick={() => {
-                        navigate(item.path);
-                        onClose();
-                      }}
-                      className={`group w-full flex items-center gap-3 px-6 py-3.5 text-sm font-bold transition-all duration-200 relative ${
-                        isCollapsed ? 'justify-center' : ''
-                      } ${
-                        active
-                          ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
-                          : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-primary)]'
-                      }`}
-                    >
-                      {active && (
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-primary)] rounded-r-full shadow-[0_0_10px_rgba(51,78,172,0.5)]" />
-                      )}
-                      <Icon className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ${active ? 'scale-110' : 'group-hover:scale-110'}`} />
-                      {!isCollapsed && (
-                        <span className={`flex-1 text-left text-body-md transition-all duration-200 ${active ? 'font-bold' : 'font-medium'}`}>
-                          {item.label}
-                        </span>
-                      )}
-                    </button>
-                  </li>
+                  <React.Fragment key={item.path}>
+                    <li>
+                      <button
+                        onClick={() => {
+                          navigate(item.path);
+                          onClose();
+                        }}
+                        className={`group w-full flex items-center gap-3 px-6 py-3.5 text-sm font-bold transition-all duration-200 relative ${
+                          isCollapsed ? 'justify-center' : ''
+                        } ${
+                          active
+                            ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
+                            : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-primary)]'
+                        }`}
+                      >
+                        {active && (
+                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-primary)] rounded-r-full shadow-[0_0_10px_rgba(51,78,172,0.5)]" />
+                        )}
+                        <Icon className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ${active ? 'scale-110' : 'group-hover:scale-110'}`} />
+                        {!isCollapsed && (
+                          <span className={`flex-1 text-left text-body-md transition-all duration-200 ${active ? 'font-bold' : 'font-medium'}`}>
+                            {item.label}
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                    {isFinance && financeActive && !isCollapsed && (
+                      <li>
+                        <button
+                          onClick={() => { navigate('/finance/goals'); onClose(); }}
+                          className={`group w-full flex items-center gap-2 pl-14 pr-6 py-2.5 text-sm transition-all duration-200 relative ${
+                            location.pathname === '/finance/goals'
+                              ? 'text-[var(--color-primary)] font-semibold'
+                              : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
+                          }`}
+                        >
+                          <Target className="w-4 h-4 flex-shrink-0" />
+                          <span>Goals</span>
+                        </button>
+                      </li>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </ul>

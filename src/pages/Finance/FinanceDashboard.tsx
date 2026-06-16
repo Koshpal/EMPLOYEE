@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   TrendingUp, TrendingDown, Wallet, Repeat, AlertCircle,
-  ChevronRight, RefreshCw, Zap,
+  ChevronRight, RefreshCw, Zap, Target,
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Layout } from '../../components/common/Layout';
@@ -13,9 +13,9 @@ import { TransactionItem } from '../../components/finance/TransactionItem';
 import {
   getWellnessOverview, getLatestScore, getSmartInsights,
   getTransactions, getAnalyticsOverview, getSpendingTrends,
-  getConsent, generateInsights, calculateScore,
+  getConsent, generateInsights, calculateScore, getGoals,
 } from '../../services/finance.service';
-import type { WellnessOverview, FinancialScore, FinancialInsight, Transaction, AnalyticsOverview } from '../../types/finance.types';
+import type { WellnessOverview, FinancialScore, FinancialInsight, Transaction, AnalyticsOverview, FinancialGoal } from '../../types/finance.types';
 import { CATEGORY_COLORS } from '../../components/finance/TransactionItem';
 
 const fadeUp = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 } };
@@ -34,6 +34,7 @@ export default function FinanceDashboard() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
   const [trends, setTrends] = useState<{ period: string; totalIncome: number; totalExpense: number }[]>([]);
+  const [goals, setGoals] = useState<FinancialGoal[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -45,13 +46,14 @@ export default function FinanceDashboard() {
         return;
       }
 
-      const [ov, sc, ins, txns, anal, tr] = await Promise.allSettled([
+      const [ov, sc, ins, txns, anal, tr, gl] = await Promise.allSettled([
         getWellnessOverview(),
         getLatestScore(),
         getSmartInsights(5),
         getTransactions({ limit: 8 }),
         getAnalyticsOverview(),
         getSpendingTrends(6),
+        getGoals(),
       ]);
 
       if (ov.status === 'fulfilled') setOverview(ov.value);
@@ -60,6 +62,7 @@ export default function FinanceDashboard() {
       if (txns.status === 'fulfilled') setTransactions(txns.value);
       if (anal.status === 'fulfilled') setAnalytics(anal.value);
       if (tr.status === 'fulfilled') setTrends((tr.value as any).trends ?? []);
+      if (gl.status === 'fulfilled') setGoals(gl.value);
     } catch {
       // Non-blocking - some data may still be available
     } finally {
@@ -306,6 +309,73 @@ export default function FinanceDashboard() {
             )}
           </motion.div>
         </div>
+
+        {/* Goals Preview */}
+        <motion.div
+          {...fadeUp}
+          transition={{ delay: 0.28 }}
+          className="bg-[var(--color-bg-card)] border border-[var(--color-border-primary)] rounded-2xl p-6"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--color-primary-lightest)]">
+                <Target className="w-4 h-4 text-[var(--color-primary)]" />
+              </div>
+              <h3 className="text-h5 text-[var(--color-text-primary)]">Financial Goals</h3>
+            </div>
+            <button
+              onClick={() => navigate('/finance/goals')}
+              className="text-xs text-[var(--color-primary)] font-semibold hover:underline flex items-center gap-1"
+            >
+              {goals.length > 0 ? 'View all' : 'Set goals'} <ChevronRight className="w-3 h-3" />
+            </button>
+          </div>
+          {goals.length > 0 ? (() => {
+            const totalTarget = goals.reduce((s, g) => s + g.goalAmount, 0);
+            const totalSaved = goals.reduce((s, g) => s + g.saving, 0);
+            const completed = goals.filter((g) => g.saving >= g.goalAmount).length;
+            const overallPct = totalTarget > 0 ? Math.min(100, Math.round((totalSaved / totalTarget) * 100)) : 0;
+            return (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-[var(--color-text-secondary)]">{goals.length} goal{goals.length !== 1 ? 's' : ''} · {completed} completed</span>
+                  <span className="font-bold text-[var(--color-text-primary)]">{overallPct}% overall</span>
+                </div>
+                <div className="w-full bg-[var(--color-bg-tertiary)] rounded-full h-2">
+                  <div
+                    className="h-2 rounded-full transition-all"
+                    style={{ width: `${overallPct}%`, backgroundColor: 'var(--color-primary)' }}
+                  />
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {goals.slice(0, 3).map((g) => {
+                    const pct = g.goalAmount > 0 ? Math.min(100, Math.round((g.saving / g.goalAmount) * 100)) : 0;
+                    return (
+                      <div key={g._id} className="bg-[var(--color-bg-secondary)] rounded-xl p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-xl">{g.icon}</span>
+                          <span className="text-xs font-semibold text-[var(--color-text-primary)] truncate">{g.goalName}</span>
+                        </div>
+                        <div className="w-full bg-[var(--color-bg-tertiary)] rounded-full h-1.5 mb-1">
+                          <div className="h-1.5 rounded-full" style={{ width: `${pct}%`, backgroundColor: pct >= 100 ? 'var(--color-success-dark)' : 'var(--color-primary)' }} />
+                        </div>
+                        <p className="text-xs text-[var(--color-text-tertiary)]">{pct}% saved</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })() : (
+            <div className="flex flex-col items-center justify-center py-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-[var(--color-bg-tertiary)] flex items-center justify-center mb-3">
+                <Target className="w-5 h-5 text-[var(--color-text-tertiary)]" />
+              </div>
+              <p className="text-sm text-[var(--color-text-secondary)]">No goals yet.</p>
+              <p className="text-xs text-[var(--color-text-tertiary)] mt-1">Set savings goals and track your progress here.</p>
+            </div>
+          )}
+        </motion.div>
 
         {/* Bottom Row: Insights + Transactions */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

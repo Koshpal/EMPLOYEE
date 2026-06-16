@@ -138,3 +138,28 @@ export interface SyncStatus {
   failed: number;
   pending: number;
 }
+
+export interface FinancialGoal {
+  _id: string;
+  goalName: string;
+  icon: string;
+  goalAmount: number;
+  saving: number;
+  goalDate: string; // ISO date string
+}
+
+export interface CreateGoalPayload {
+  goalName: string;
+  icon: string;
+  goalAmount: number;
+  saving?: number;
+  goalDate: string; // "YYYY-MM-DD"
+}
+
+export interface UpdateGoalPayload {
+  goalName?: string;
+  icon?: string;
+  goalAmount?: number;
+  saving?: number;
+  goalDate?: string;
+}
