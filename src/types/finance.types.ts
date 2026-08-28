@@ -7,28 +7,72 @@ export type FinanceCategory =
   | 'Recharge' | 'Utilities' | 'Fuel' | 'Groceries' | 'Transfers'
   | 'Education' | 'Wellness' | 'Uncategorized';
 
+/**
+ * Canonical transaction shape — matches the server's `serializeTransaction`
+ * output, used by both `GET /transactions` and the SSE stream. Prisma `Decimal`
+ * columns arrive as `number`; every date as an ISO string.
+ */
 export interface Transaction {
   id: string;
   userId: string;
+  companyId: string;
+  accountId?: string | null;
   amount: number;
   type: TransactionDirection;
-  category: FinanceCategory;
-  subCategory?: string;
-  source: 'MANUAL' | 'MOBILE' | 'BANK';
-  description?: string;
-  merchant?: string;
-  bank?: string;
-  maskedAccountNo?: string;
+  category: string;
+  subCategory?: string | null;
+  origin: 'MANUAL' | 'SMS' | 'BANK' | 'IMPORTED';
+  mode?: PaymentMethod | null;
+  description?: string | null;
+  notes?: string | null;
+  senderName?: string | null;
+  receiverName?: string | null;
+  bank?: string | null;
+  maskedAccountNo?: string | null;
   transactionDate: string;
   isSalary: boolean;
   isEMI: boolean;
   isRecurring: boolean;
-  paymentMethod?: PaymentMethod;
-  upiId?: string;
-  referenceId?: string;
-  availableBalance?: number;
+  isBookmarked: boolean;
+  upiId?: string | null;
+  referenceId?: string | null;
+  availableBalance?: number | null;
   createdAt: string;
-  deletedAt?: string;
+  updatedAt: string;
+  deletedAt?: string | null;
+  account?: {
+    type: string;
+    provider: string | null;
+    maskedAccountNo: string | null;
+  } | null;
+}
+
+export interface PaginatedTransactions {
+  transactions: Transaction[];
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+}
+
+export type TransactionStreamEventType =
+  | 'transaction.created'
+  | 'transaction.updated'
+  | 'transaction.deleted'
+  | 'transaction.resync';
+
+export interface TransactionStreamEvent {
+  type: TransactionStreamEventType;
+  transactionId: string | null;
+  occurredAt: string;
+  /** full row for created/updated, `{ id }` for deleted, `null` for resync */
+  data: Transaction | { id: string } | null;
+}
+
+export interface TransactionChangesResponse {
+  changes: TransactionStreamEvent[];
+  hasMore: boolean;
+  nextSince: string;
 }
 
 export interface WellnessOverview {
@@ -139,27 +183,35 @@ export interface SyncStatus {
   pending: number;
 }
 
+// Matches the backend `toDto()` in employee/goals/goals.service.ts.
 export interface FinancialGoal {
-  _id: string;
-  goalName: string;
-  icon: string;
-  goalAmount: number;
-  saving: number;
-  goalDate: string; // ISO date string
+  id: string;
+  title: string;
+  iconResId: string;       // we store the picked emoji here
+  colorHex?: string | null;
+  imageUri?: string | null;
+  targetAmount: number;
+  savedAmount: number;
+  monthlySavings: number;
+  durationMonths?: number | null;
+  isAchieved: boolean;
+  tagId?: string | null;
+  creationDate: string;    // ISO
+  goalDate: string;        // ISO
 }
 
 export interface CreateGoalPayload {
-  goalName: string;
-  icon: string;
-  goalAmount: number;
-  saving?: number;
-  goalDate: string; // "YYYY-MM-DD"
+  title: string;
+  iconResId: string;
+  targetAmount: number;
+  savedAmount?: number;
+  goalDate: string;        // ISO 8601
 }
 
 export interface UpdateGoalPayload {
-  goalName?: string;
-  icon?: string;
-  goalAmount?: number;
-  saving?: number;
+  title?: string;
+  iconResId?: string;
+  targetAmount?: number;
+  savedAmount?: number;
   goalDate?: string;
 }

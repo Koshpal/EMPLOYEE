@@ -46,10 +46,10 @@ interface GoalModalProps {
 }
 
 function GoalModal({ goal, onClose, onSave }: GoalModalProps) {
-  const [name, setName] = useState(goal?.goalName ?? '');
-  const [icon, setIcon] = useState(goal?.icon ?? '🎯');
-  const [amount, setAmount] = useState(goal ? String(goal.goalAmount) : '');
-  const [saving, setSaving] = useState(goal ? String(goal.saving) : '');
+  const [name, setName] = useState(goal?.title ?? '');
+  const [icon, setIcon] = useState(goal?.iconResId ?? '🎯');
+  const [amount, setAmount] = useState(goal ? String(goal.targetAmount) : '');
+  const [saving, setSaving] = useState(goal ? String(goal.savedAmount) : '');
   const [date, setDate] = useState(goal ? goal.goalDate.slice(0, 10) : '');
   const [saving_state, setSavingState] = useState(false);
   const [error, setError] = useState('');
@@ -68,8 +68,14 @@ function GoalModal({ goal, onClose, onSave }: GoalModalProps) {
     setSavingState(true);
     try {
       await onSave(
-        { goalName: name.trim(), icon, goalAmount: Number(amount), saving: Number(saving) || 0, goalDate: date },
-        goal?._id,
+        {
+          title: name.trim(),
+          iconResId: icon,
+          targetAmount: Number(amount),
+          savedAmount: Number(saving) || 0,
+          goalDate: new Date(date).toISOString(),
+        },
+        goal?.id,
       );
       onClose();
     } catch {
@@ -202,10 +208,10 @@ interface GoalCardProps {
 }
 
 function GoalCard({ goal, onEdit, onDelete }: GoalCardProps) {
-  const progress = goal.goalAmount > 0 ? Math.min(100, (goal.saving / goal.goalAmount) * 100) : 0;
+  const progress = goal.targetAmount > 0 ? Math.min(100, (goal.savedAmount / goal.targetAmount) * 100) : 0;
   const completed = progress >= 100;
   const days = daysLeft(goal.goalDate);
-  const remaining = Math.max(0, goal.goalAmount - goal.saving);
+  const remaining = Math.max(0, goal.targetAmount - goal.savedAmount);
 
   return (
     <motion.div
@@ -216,10 +222,10 @@ function GoalCard({ goal, onEdit, onDelete }: GoalCardProps) {
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-[var(--color-primary)]/10 flex items-center justify-center text-2xl">
-            {goal.icon}
+            {goal.iconResId}
           </div>
           <div>
-            <h3 className="text-sm font-bold text-[var(--color-text-primary)] leading-tight">{goal.goalName}</h3>
+            <h3 className="text-sm font-bold text-[var(--color-text-primary)] leading-tight">{goal.title}</h3>
             <div className="flex items-center gap-1 mt-0.5">
               {completed
                 ? <CheckCircle2 className="w-3 h-3 text-[var(--color-success-dark)]" />
@@ -252,11 +258,11 @@ function GoalCard({ goal, onEdit, onDelete }: GoalCardProps) {
       <div className="flex items-end justify-between mb-3">
         <div>
           <p className="text-xs text-[var(--color-text-tertiary)] mb-0.5">Saved</p>
-          <p className="text-h5 font-bold text-[var(--color-text-primary)] tabular-nums">{formatINR(goal.saving)}</p>
+          <p className="text-h5 font-bold text-[var(--color-text-primary)] tabular-nums">{formatINR(goal.savedAmount)}</p>
         </div>
         <div className="text-right">
           <p className="text-xs text-[var(--color-text-tertiary)] mb-0.5">Target</p>
-          <p className="text-sm font-semibold text-[var(--color-text-secondary)] tabular-nums">{formatINR(goal.goalAmount)}</p>
+          <p className="text-sm font-semibold text-[var(--color-text-secondary)] tabular-nums">{formatINR(goal.targetAmount)}</p>
         </div>
       </div>
 
@@ -305,10 +311,10 @@ function DeleteConfirm({ goal, onCancel, onConfirm }: { goal: FinancialGoal; onC
         exit={{ opacity: 0, scale: 0.95 }}
         className="w-full max-w-sm bg-[var(--color-bg-card)] border border-[var(--color-border-primary)] rounded-2xl p-6 shadow-2xl text-center"
       >
-        <div className="text-4xl mb-3">{goal.icon}</div>
+        <div className="text-4xl mb-3">{goal.iconResId}</div>
         <h3 className="text-h5 text-[var(--color-text-primary)] mb-2">Delete Goal?</h3>
         <p className="text-sm text-[var(--color-text-secondary)] mb-6">
-          "<strong>{goal.goalName}</strong>" will be permanently deleted.
+          "<strong>{goal.title}</strong>" will be permanently deleted.
         </p>
         <div className="flex gap-3">
           <button
@@ -353,10 +359,18 @@ export default function Goals() {
 
   useEffect(() => { load(); }, []);
 
+  // Deep link from the Get-started checklist: /finance/goals?new=1
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('new') === '1') {
+      setEditGoal(null);
+      setShowModal(true);
+    }
+  }, []);
+
   async function handleSave(payload: CreateGoalPayload, id?: string) {
     if (id) {
       const updated = await updateGoal(id, payload);
-      setGoals((prev) => prev.map((g) => (g._id === id ? updated : g)));
+      setGoals((prev) => prev.map((g) => (g.id === id ? updated : g)));
     } else {
       const created = await createGoal(payload);
       setGoals((prev) => [...prev, created]);
@@ -365,15 +379,15 @@ export default function Goals() {
 
   async function handleDelete(id: string) {
     await deleteGoal(id);
-    setGoals((prev) => prev.filter((g) => g._id !== id));
+    setGoals((prev) => prev.filter((g) => g.id !== id));
     setDeleteGoal(null);
   }
 
   // Summary stats
   const totalGoals = goals.length;
-  const completed = goals.filter((g) => g.saving >= g.goalAmount).length;
-  const totalTarget = goals.reduce((s, g) => s + g.goalAmount, 0);
-  const totalSaved = goals.reduce((s, g) => s + g.saving, 0);
+  const completed = goals.filter((g) => g.savedAmount >= g.targetAmount).length;
+  const totalTarget = goals.reduce((s, g) => s + g.targetAmount, 0);
+  const totalSaved = goals.reduce((s, g) => s + g.savedAmount, 0);
   const overallProgress = totalTarget > 0 ? Math.min(100, (totalSaved / totalTarget) * 100) : 0;
 
   return (
@@ -477,7 +491,7 @@ export default function Goals() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {goals.map((goal) => (
               <GoalCard
-                key={goal._id}
+                key={goal.id}
                 goal={goal}
                 onEdit={() => { setEditGoal(goal); setShowModal(true); }}
                 onDelete={() => setDeleteGoal(goal)}
@@ -500,7 +514,7 @@ export default function Goals() {
           <DeleteConfirm
             goal={deleteGoal_}
             onCancel={() => setDeleteGoal(null)}
-            onConfirm={() => handleDelete(deleteGoal_._id)}
+            onConfirm={() => handleDelete(deleteGoal_.id)}
           />
         )}
       </AnimatePresence>

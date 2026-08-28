@@ -19,6 +19,13 @@ const Coaches: React.FC = () => {
       try {
         const data = await coachService.getCoaches();
         setCoaches(data);
+        // Deep link from "Book again": /coaches?coach=<id> auto-opens the modal.
+        const wantId = new URLSearchParams(window.location.search).get('coach');
+        const match = wantId && data.find((c) => c.id === wantId);
+        if (match) {
+          setSelectedCoach(match);
+          setIsBookingModalOpen(true);
+        }
       } catch (error) {
         console.error('Error fetching coaches:', error);
       } finally {
@@ -41,10 +48,6 @@ const Coaches: React.FC = () => {
   const handleBook = (coach: Coach) => {
     setSelectedCoach(coach);
     setIsBookingModalOpen(true);
-  };
-
-  const handleViewProfile = (coach: Coach) => {
-    console.log('View profile:', coach.fullName);
   };
 
   return (
@@ -122,8 +125,7 @@ const Coaches: React.FC = () => {
               <CoachCard 
                 key={coach.id} 
                 coach={coach} 
-                onBook={handleBook} 
-                onViewProfile={handleViewProfile} 
+                onBook={handleBook}  
               />
             ))}
           </div>

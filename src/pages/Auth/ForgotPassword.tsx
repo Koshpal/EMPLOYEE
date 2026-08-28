@@ -51,13 +51,22 @@ const ForgotPassword = () => {
     }
 
     setLoading(true);
+    let tempToken: string;
     try {
-      const { tempToken } = await employeeService.verifyOtp(email, otp);
+      // Normalize identically to handleRequestOtp so the OTP lookup matches.
+      const res = await employeeService.verifyOtp(email.trim().toLowerCase(), otp);
+      tempToken = res.tempToken;
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'That code is invalid or has expired.');
+      setLoading(false);
+      return;
+    }
+    try {
       await employeeService.resetPassword(tempToken, newPassword);
       setSuccess('Password reset successful! Redirecting to login...');
       setTimeout(() => navigate('/login'), 2000);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Reset failed. Check your OTP.');
+      setError(err.response?.data?.message || 'Could not reset your password. Please try again.');
     } finally {
       setLoading(false);
     }

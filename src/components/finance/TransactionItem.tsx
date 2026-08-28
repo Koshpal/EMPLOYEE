@@ -54,9 +54,11 @@ interface TransactionItemProps {
 }
 
 function formatAmount(amount: number): string {
-  if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
-  if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)}K`;
-  return `₹${amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+  // Render the magnitude only — the +/- sign is added by the caller from `type`.
+  const n = Math.abs(Number.isFinite(amount) ? amount : 0);
+  if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`;
+  if (n >= 1000) return `₹${(n / 1000).toFixed(1)}K`;
+  return `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 }
 
 function formatDate(dateStr: string): string {
@@ -83,10 +85,10 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, s
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold text-[var(--color-text-primary)] truncate max-w-[160px]">
-            {transaction.merchant || transaction.description || transaction.category}
+            {transaction.senderName || transaction.receiverName || transaction.description || transaction.category}
           </p>
           <span className={`text-sm font-bold tabular-nums ${isCredit ? 'text-[var(--color-success-dark)]' : 'text-[var(--color-text-primary)]'}`}>
-            {isCredit ? '+' : '-'}{formatAmount(transaction.amount)}
+            {isCredit ? '+' : '-'}{formatAmount(Number(transaction.amount))}
           </span>
         </div>
         <div className="flex items-center gap-2 mt-0.5">

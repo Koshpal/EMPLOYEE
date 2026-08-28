@@ -6,9 +6,15 @@ import { Button } from '../../components/ui/Button';
 import { User, ShieldCheck, Mail, Phone, Camera, Loader2, CheckCircle, Lock, X, Eye, EyeOff } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
+
+const SUPPORT_EMAIL = 'koshpal@koshpal.com';
 
 const Profile: React.FC = () => {
   const { toggleTheme, theme } = useTheme();
+  const { logout } = useAuth();
+  const toast = useToast();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -30,9 +36,6 @@ const Profile: React.FC = () => {
     phone: '',
   });
   const [phoneError, setPhoneError] = useState('');
-  const [emailAlertsEnabled, setEmailAlertsEnabled] = useState(
-    () => localStorage.getItem('employee_email_alerts') !== 'false'
-  );
 
   useEffect(() => {
     fetchProfile();
@@ -69,7 +72,10 @@ const Profile: React.FC = () => {
       await employeeService.changePassword(pwForm.current, pwForm.next);
       setShowPasswordModal(false);
       setPwForm({ current: '', next: '', confirm: '' });
-      setMessage({ text: 'Password changed successfully. Please log in again.', type: 'success' });
+      // The server revokes every session on password change — sign out cleanly
+      // instead of leaving the user on a page whose cookie is now dead.
+      toast.success('Password changed. Please sign in again.');
+      setTimeout(() => logout(), 1200);
     } catch {
       setPwError('Current password is incorrect or request failed.');
     } finally {
@@ -112,12 +118,6 @@ const Profile: React.FC = () => {
     } else {
       setPhoneError('');
     }
-  };
-
-  const handleEmailAlertsToggle = () => {
-    const next = !emailAlertsEnabled;
-    setEmailAlertsEnabled(next);
-    localStorage.setItem('employee_email_alerts', String(next));
   };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -265,7 +265,7 @@ const Profile: React.FC = () => {
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
                     <input 
                       type="email" 
-                      value={profile?.email}
+                      value={profile?.email ?? ''}
                       disabled
                       className="w-full pl-11 pr-4 py-3 rounded-2xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-primary)] text-[var(--color-text-tertiary)] cursor-not-allowed"
                     />
@@ -311,27 +311,22 @@ const Profile: React.FC = () => {
                 
                 <div className="flex items-center justify-between p-4 rounded-2xl bg-[var(--color-bg-tertiary)]">
                   <div>
-                    <p className="font-bold text-[var(--color-text-primary)]">Email Alerts</p>
-                    <p className="text-xs text-[var(--color-text-secondary)]">Session reminders</p>
+                    <p className="font-bold text-[var(--color-text-primary)]">Session reminders</p>
+                    <p className="text-xs text-[var(--color-text-secondary)]">
+                      You'll get an email and a calendar invite for every session you book.
+                    </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleEmailAlertsToggle}
-                    role="switch"
-                    aria-checked={emailAlertsEnabled}
-                    aria-label="Toggle email alerts"
-                    className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${emailAlertsEnabled ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-grey-lightest)]'}`}
-                  >
-                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${emailAlertsEnabled ? 'left-7' : 'left-1'}`} />
-                  </button>
+                  <span className="text-xs font-semibold text-[var(--color-success-dark)] whitespace-nowrap">On</span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-[var(--color-error)]/5 p-8 rounded-3xl border border-[var(--color-error)]/10">
-              <h3 className="font-bold text-[var(--color-error)] mb-2">Need help?</h3>
+            <div className="bg-[var(--color-bg-card)] p-8 rounded-3xl border border-[var(--color-border-primary)] shadow-sm">
+              <h3 className="font-bold text-[var(--color-text-primary)] mb-2">Need help?</h3>
               <p className="text-sm text-[var(--color-text-secondary)] mb-4">Having trouble with your profile or account? Our support team is here to help.</p>
-              <Button variant="danger" size="sm" className="w-full">Contact Support</Button>
+              <a href={`mailto:${SUPPORT_EMAIL}?subject=Koshpal%20portal%20support`}>
+                <Button variant="outline" size="sm" className="w-full">Contact Support</Button>
+              </a>
             </div>
           </div>
         </div>

@@ -7,7 +7,6 @@ import { Badge } from '../ui/Badge';
 interface CoachCardProps {
   coach: Coach;
   onBook: (coach: Coach) => void;
-  onViewProfile: (coach: Coach) => void;
 }
 
 /** Renders 5 stars — filled / half / empty — based on a decimal rating. */
@@ -35,7 +34,7 @@ const StarRating: React.FC<{ rating: number }> = ({ rating }) => (
   </div>
 );
 
-export const CoachCard: React.FC<CoachCardProps> = ({ coach, onBook, onViewProfile }) => (
+export const CoachCard: React.FC<CoachCardProps> = ({ coach, onBook }) => (
   <div className="bg-(--color-bg-card) p-5 rounded-2xl border border-(--color-border-primary) shadow-sm hover:shadow-lg transition-all group animate-fade-in flex flex-col h-full">
     <div className="flex gap-4 mb-4">
       {/* Profile image */}
@@ -99,23 +98,15 @@ export const CoachCard: React.FC<CoachCardProps> = ({ coach, onBook, onViewProfi
       ))}
     </div>
 
-    {/* Action buttons */}
-    <div className="flex gap-2 pt-4 border-t border-(--color-border-primary) mt-auto">
-      <Button
-        variant="outline"
-        size="sm"
-        className="flex-1 text-xs"
-        onClick={() => onViewProfile(coach)}
-      >
-        View Profile
-      </Button>
+    {/* Action button */}
+    <div className="pt-4 border-t border-(--color-border-primary) mt-auto">
       <Button
         variant="primary"
         size="sm"
-        className="flex-1 text-xs gap-1"
+        className="w-full text-xs gap-1"
         onClick={() => onBook(coach)}
       >
-        Book Session
+        Book a Session
         <ArrowUpRight className="w-3 h-3" />
       </Button>
     </div>

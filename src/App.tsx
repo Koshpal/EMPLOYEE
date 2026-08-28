@@ -9,6 +9,7 @@ import Coaches from './pages/Coaches/Coaches';
 import Sessions from './pages/Sessions/Sessions';
 import Profile from './pages/Profile/Profile';
 import Calendar from './pages/Calendar/Calendar';
+import MoneyCheckIn from './pages/Onboarding/MoneyCheckIn';
 
 // Finance pages
 import FinanceDashboard from './pages/Finance/FinanceDashboard';
@@ -35,6 +36,7 @@ function App() {
       <Route path="/sessions" element={<ProtectedRoute><Sessions /></ProtectedRoute>} />
       <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+      <Route path="/onboarding" element={<ProtectedRoute><MoneyCheckIn /></ProtectedRoute>} />
 
       {/* Finance routes */}
       <Route path="/finance" element={<ProtectedRoute><FinanceDashboard /></ProtectedRoute>} />

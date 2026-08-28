@@ -50,7 +50,7 @@ export default function FinanceDashboard() {
         getWellnessOverview(),
         getLatestScore(),
         getSmartInsights(5),
-        getTransactions({ limit: 8 }),
+        getTransactions({ page: 1, limit: 8 }),
         getAnalyticsOverview(),
         getSpendingTrends(6),
         getGoals(),
@@ -59,7 +59,7 @@ export default function FinanceDashboard() {
       if (ov.status === 'fulfilled') setOverview(ov.value);
       if (sc.status === 'fulfilled') setScore(sc.value);
       if (ins.status === 'fulfilled') setInsights(ins.value);
-      if (txns.status === 'fulfilled') setTransactions(txns.value);
+      if (txns.status === 'fulfilled') setTransactions(txns.value.transactions);
       if (anal.status === 'fulfilled') setAnalytics(anal.value);
       if (tr.status === 'fulfilled') setTrends((tr.value as any).trends ?? []);
       if (gl.status === 'fulfilled') setGoals(gl.value);
@@ -331,9 +331,9 @@ export default function FinanceDashboard() {
             </button>
           </div>
           {goals.length > 0 ? (() => {
-            const totalTarget = goals.reduce((s, g) => s + g.goalAmount, 0);
-            const totalSaved = goals.reduce((s, g) => s + g.saving, 0);
-            const completed = goals.filter((g) => g.saving >= g.goalAmount).length;
+            const totalTarget = goals.reduce((s, g) => s + g.targetAmount, 0);
+            const totalSaved = goals.reduce((s, g) => s + g.savedAmount, 0);
+            const completed = goals.filter((g) => g.savedAmount >= g.targetAmount).length;
             const overallPct = totalTarget > 0 ? Math.min(100, Math.round((totalSaved / totalTarget) * 100)) : 0;
             return (
               <div className="space-y-4">
@@ -349,12 +349,12 @@ export default function FinanceDashboard() {
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {goals.slice(0, 3).map((g) => {
-                    const pct = g.goalAmount > 0 ? Math.min(100, Math.round((g.saving / g.goalAmount) * 100)) : 0;
+                    const pct = g.targetAmount > 0 ? Math.min(100, Math.round((g.savedAmount / g.targetAmount) * 100)) : 0;
                     return (
-                      <div key={g._id} className="bg-[var(--color-bg-secondary)] rounded-xl p-3">
+                      <div key={g.id} className="bg-[var(--color-bg-secondary)] rounded-xl p-3">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="text-xl">{g.icon}</span>
-                          <span className="text-xs font-semibold text-[var(--color-text-primary)] truncate">{g.goalName}</span>
+                          <span className="text-xl">{g.iconResId}</span>
+                          <span className="text-xs font-semibold text-[var(--color-text-primary)] truncate">{g.title}</span>
                         </div>
                         <div className="w-full bg-[var(--color-bg-tertiary)] rounded-full h-1.5 mb-1">
                           <div className="h-1.5 rounded-full" style={{ width: `${pct}%`, backgroundColor: pct >= 100 ? 'var(--color-success-dark)' : 'var(--color-primary)' }} />

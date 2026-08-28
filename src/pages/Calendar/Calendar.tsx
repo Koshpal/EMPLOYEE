@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Layout } from '../../components/common/Layout';
 import { coachService } from '../../services/coach.service';
 import type { Consultation } from '../../types/booking.types';
-import { ChevronLeft, ChevronRight, ExternalLink, Video } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink, Video, CalendarPlus, Loader2 } from 'lucide-react';
 import { formatDateLocal } from '../../utils/date';
 
 const Calendar: React.FC = () => {
+  const navigate = useNavigate();
   const [sessions, setSessions] = useState<Consultation[]>([]);
-  const [, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
     const today = new Date();
     const day = today.getDay();
@@ -107,6 +109,28 @@ const Calendar: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {loading && (
+          <div className="flex items-center justify-center gap-2 py-3 text-sm text-[var(--color-text-tertiary)]">
+            <Loader2 className="w-4 h-4 animate-spin" /> Loading your week…
+          </div>
+        )}
+
+        {!loading && sessions.length === 0 && (
+          <div className="bg-[var(--color-bg-card)] rounded-3xl border border-dashed border-[var(--color-border-primary)] p-10 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center mx-auto mb-4">
+              <CalendarPlus className="w-7 h-7" />
+            </div>
+            <h3 className="font-heading font-bold text-[var(--color-text-primary)]">Nothing scheduled this week</h3>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-1 mb-5">Book a session with a coach and it'll show up here.</p>
+            <button
+              onClick={() => navigate('/coaches')}
+              className="bg-[var(--color-primary)] text-white px-6 py-2.5 rounded-xl font-bold shadow-lg hover:opacity-90 transition-all"
+            >
+              Book a session
+            </button>
+          </div>
+        )}
 
         {/* Weekly Grid */}
         <div className="bg-[var(--color-bg-card)] rounded-3xl border border-[var(--color-border-primary)] shadow-xl overflow-hidden">

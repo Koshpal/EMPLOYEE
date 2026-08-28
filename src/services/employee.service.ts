@@ -1,7 +1,29 @@
 import { axiosInstance } from './api';
 import type { AuthResponse, UserProfile } from '../types/employee.types';
 
+export type ActivationStepKey =
+  | 'profile' | 'checkin' | 'consent' | 'goal' | 'session' | 'app';
+
+export interface ActivationStatus {
+  createdAt: string | null;
+  dismissedAt: string | null;
+  completedCount: number;
+  total: number;
+  isComplete: boolean;
+  steps: { key: ActivationStepKey; done: boolean }[];
+}
+
 export const employeeService = {
+  getActivation: async (): Promise<ActivationStatus> => {
+    const response = await axiosInstance.get('/employee/activation');
+    return response.data;
+  },
+
+  dismissActivation: async (): Promise<{ dismissedAt: string }> => {
+    const response = await axiosInstance.patch('/employee/activation/dismiss');
+    return response.data;
+  },
+
   login: async (credentials: any): Promise<AuthResponse> => {
     const response = await axiosInstance.post('/auth/login', credentials);
     return response.data;
@@ -44,8 +66,10 @@ export const employeeService = {
   },
 
   updateProfile: async (data: FormData) => {
+    // Clear the instance's default JSON content-type so axios derives
+    // `multipart/form-data` + boundary from the FormData body.
     const response = await axiosInstance.put('/employee/profile', data, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { 'Content-Type': undefined },
     });
     return response.data;
   },

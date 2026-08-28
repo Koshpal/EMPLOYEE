@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Repeat, Calendar, TrendingUp, AlertCircle } from 'lucide-react';
 import { Layout } from '../../components/common/Layout';
+import { GetAppButton } from '../../components/onboarding/GetAppButton';
 import { getSubscriptions } from '../../services/finance.service';
 import type { DetectedSubscription } from '../../types/finance.types';
 
@@ -105,10 +106,11 @@ export default function Subscriptions() {
             <div className="w-14 h-14 rounded-full bg-[var(--color-bg-tertiary)] flex items-center justify-center mx-auto mb-4">
               <Repeat className="w-6 h-6 text-[var(--color-text-tertiary)]" />
             </div>
-            <p className="font-bold text-[var(--color-text-primary)]">No subscriptions detected</p>
-            <p className="text-xs text-[var(--color-text-tertiary)] mt-1 max-w-xs mx-auto">
-              Subscriptions are auto-detected from your synced transactions. Enable SMS sync to start tracking.
+            <p className="font-bold text-[var(--color-text-primary)]">No subscriptions detected yet</p>
+            <p className="text-xs text-[var(--color-text-tertiary)] mt-1 mb-5 max-w-xs mx-auto">
+              Koshpal spots recurring payments automatically once your transactions sync from the mobile app.
             </p>
+            <GetAppButton />
           </div>
         ) : (
           <div className="space-y-3">

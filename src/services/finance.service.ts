@@ -7,7 +7,8 @@ import type {
   FinancialConsent,
   AnalyticsOverview,
   MonthlyTrend,
-  Transaction,
+  PaginatedTransactions,
+  TransactionChangesResponse,
   SyncStatus,
   FinancialGoal,
   CreateGoalPayload,
@@ -95,37 +96,36 @@ export const getSubscriptions = async (): Promise<DetectedSubscription[]> => {
 };
 
 // --- Transactions ---
-export interface CreateTransactionPayload {
-  amount: number;
-  type: 'INCOME' | 'EXPENSE';
-  category: string;
-  source: 'MANUAL' | 'MOBILE' | 'BANK';
-  transactionDate: string;
-  accountId?: string;
-  subCategory?: string;
-  description?: string;
-  merchant?: string;
-  bank?: string;
-  paymentMethod?: string;
-}
-
-export const createTransaction = async (dto: CreateTransactionPayload): Promise<void> => {
-  await axiosInstance.post('/transactions', dto);
-};
+// NOTE: transactions are never created from the web. They originate on the
+// mobile app (offline-first) and sync to the backend; the web is read-only and
+// receives changes over SSE (see services/transactionStream.ts).
 
 export const getTransactions = async (params?: {
   type?: string;
   category?: string;
+  page?: number;
   limit?: number;
-  skip?: number;
-}): Promise<Transaction[]> => {
+}): Promise<PaginatedTransactions> => {
   const query = new URLSearchParams();
   if (params?.type) query.set('type', params.type);
   if (params?.category) query.set('category', params.category);
-  if (params?.limit) query.set('limit', String(params.limit));
-  if (params?.skip) query.set('skip', String(params.skip));
+  query.set('page', String(params?.page ?? 1));
+  query.set('limit', String(params?.limit ?? 50));
   const res = await axiosInstance.get(`/transactions?${query}`);
-  return res.data;
+  return res.data as PaginatedTransactions;
+};
+
+/**
+ * Missed-event recovery. Called after every SSE (re)connect and on tab focus so
+ * a dropped stream can never cause a silently missed change.
+ */
+export const getTransactionChanges = async (
+  since: string,
+  limit = 200,
+): Promise<TransactionChangesResponse> => {
+  const query = new URLSearchParams({ since, limit: String(limit) });
+  const res = await axiosInstance.get(`/transactions/changes?${query}`);
+  return res.data as TransactionChangesResponse;
 };
 
 // --- Consent ---

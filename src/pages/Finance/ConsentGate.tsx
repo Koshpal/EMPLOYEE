@@ -100,24 +100,31 @@ export default function ConsentGate() {
           </div>
 
           {/* Consent Options */}
-          <div className="space-y-3 mb-8">
+          <div className="space-y-3 mb-4">
             {features.map((feature) => {
               const Icon = feature.icon;
               const isEnabled = form[feature.key];
+              const toggle = () =>
+                setForm((prev) => ({ ...prev, [feature.key]: !prev[feature.key] }));
               return (
                 <motion.div
                   key={feature.key}
                   whileHover={{ scale: 1.01 }}
-                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                  role="switch"
+                  aria-checked={isEnabled}
+                  tabIndex={0}
+                  onClick={toggle}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      toggle();
+                    }
+                  }}
+                  className={`p-4 rounded-2xl border-2 cursor-pointer transition-all outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
                     isEnabled
                       ? 'border-[var(--color-primary)] bg-[var(--color-primary-lightest)]'
                       : 'border-[var(--color-border-primary)] bg-[var(--color-bg-card)]'
                   }`}
-                  onClick={() => {
-                    if (!feature.required) {
-                      setForm((prev) => ({ ...prev, [feature.key]: !prev[feature.key] }));
-                    }
-                  }}
                 >
                   <div className="flex items-start gap-3">
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
@@ -126,20 +133,27 @@ export default function ConsentGate() {
                       <Icon className="w-4 h-4" />
                     </div>
                     <div className="flex-1">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-3">
                         <p className="text-sm font-bold text-[var(--color-text-primary)]">
                           {feature.title}
                           {feature.required && (
-                            <span className="ml-2 text-xs text-[var(--color-primary)] font-medium">(Required for features)</span>
+                            <span className="ml-2 text-xs text-[var(--color-primary)] font-medium">Recommended</span>
                           )}
                         </p>
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                          isEnabled
-                            ? 'bg-[var(--color-primary)] border-[var(--color-primary)]'
-                            : 'border-[var(--color-border-secondary)]'
-                        }`}>
-                          {isEnabled && <Check className="w-3 h-3 text-white" />}
-                        </div>
+                        {/* iOS-style switch */}
+                        <span
+                          className={`relative w-10 h-6 rounded-full flex-shrink-0 transition-colors ${
+                            isEnabled ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-bg-tertiary)] border border-[var(--color-border-secondary)]'
+                          }`}
+                        >
+                          <span
+                            className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all flex items-center justify-center ${
+                              isEnabled ? 'left-[18px]' : 'left-0.5'
+                            }`}
+                          >
+                            {isEnabled && <Check className="w-3 h-3 text-[var(--color-primary)]" />}
+                          </span>
+                        </span>
                       </div>
                       <p className="text-xs text-[var(--color-text-secondary)] mt-1 leading-relaxed">{feature.description}</p>
                     </div>
@@ -149,14 +163,16 @@ export default function ConsentGate() {
             })}
           </div>
 
+          <button
+            type="button"
+            onClick={() => setForm({ smsSync: true, analytics: true, hrVisible: false, coachVisible: false })}
+            className="text-xs font-semibold text-[var(--color-primary)] hover:underline mb-8"
+          >
+            Select recommended (SMS Sync + Analytics)
+          </button>
+
           {/* Action Buttons */}
           <div className="space-y-3">
-            <button
-              onClick={() => setForm({ smsSync: true, analytics: true, hrVisible: false, coachVisible: false })}
-              className="w-full py-3 px-6 rounded-xl bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] font-semibold hover:bg-[var(--color-bg-secondary)] transition-all text-sm"
-            >
-              Enable Recommended (SMS + Analytics only)
-            </button>
             <button
               disabled={saving || (!form.smsSync && !form.analytics)}
               onClick={handleSave}
@@ -166,10 +182,15 @@ export default function ConsentGate() {
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  Save & Continue <ChevronRight className="w-4 h-4" />
+                  Save &amp; Continue <ChevronRight className="w-4 h-4" />
                 </>
               )}
             </button>
+            {!saving && !form.smsSync && !form.analytics && (
+              <p className="text-center text-xs text-[var(--color-text-tertiary)]">
+                Turn on SMS Sync or Analytics to continue.
+              </p>
+            )}
             {consent?.hasConsented && (
               <button
                 onClick={() => navigate('/finance')}

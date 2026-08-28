@@ -28,6 +28,7 @@ export interface Consultation {
   notes?: string;
   status: 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
   bookedAt: string;
+  hasFeedback?: boolean;
   slot: Slot;
   coach: Coach;
 }

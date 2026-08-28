@@ -2,7 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Menu, Settings, HelpCircle, LogOut, ChevronRight } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
+import { ProgressRing } from './ProgressRing';
 import { useAuth } from '../../context/AuthContext';
+import { useActivation } from '../../hooks/useActivation';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -12,8 +14,15 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ onMenuClick, title }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { status: activation, isComplete: activationComplete, dismissed: activationDismissed } = useActivation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const showSetupRing =
+    !!activation && !activationComplete && !activationDismissed;
+  const setupPct = activation
+    ? Math.round((activation.completedCount / activation.total) * 100)
+    : 0;
 
   const userName = user?.name || user?.email?.split('@')[0] || 'Employee';
   const userEmail = user?.email || '';
@@ -60,8 +69,23 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, title }) => {
       </div>
 
       <div className="flex items-center gap-3">
+        {showSetupRing && (
+          <button
+            onClick={() => navigate('/dashboard')}
+            title={`Setup ${activation!.completedCount}/${activation!.total}`}
+            aria-label={`Onboarding ${setupPct}% complete`}
+            className="hidden sm:flex items-center gap-2 rounded-full border border-[var(--color-border-primary)] bg-[var(--color-bg-tertiary)] py-1 pl-1 pr-3 text-xs font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
+          >
+            <ProgressRing value={setupPct} size={24} strokeWidth={3}>
+              <span className="text-[9px] font-bold text-[var(--color-primary)]">
+                {activation!.completedCount}
+              </span>
+            </ProgressRing>
+            Setup
+          </button>
+        )}
         <ThemeToggle />
-        
+
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -93,13 +117,14 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, title }) => {
 
                 <div className="h-[1px] my-1 mx-4 bg-[var(--color-border-primary)]"></div>
 
-                <button
+                <a
+                  href="mailto:koshpal@koshpal.com?subject=Koshpal%20portal%20support"
                   className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-[var(--color-bg-secondary)] transition-colors"
                 >
                   <HelpCircle className="w-5 h-5 opacity-70" />
                   <span className="flex-1 text-left">Help & Support</span>
                   <ChevronRight className="w-4 h-4 opacity-50" />
-                </button>
+                </a>
 
                 <button
                   onClick={handleLogout}

@@ -1,25 +1,34 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, X, Plus } from 'lucide-react';
+import { Search, Filter, X } from 'lucide-react';
 import { Layout } from '../../components/common/Layout';
 import { TransactionItem } from '../../components/finance/TransactionItem';
-import { AddTransactionModal } from '../../components/finance/AddTransactionModal';
-import { getTransactions } from '../../services/finance.service';
-import type { Transaction, FinanceCategory } from '../../types/finance.types';
+import { GetAppButton } from '../../components/onboarding/GetAppButton';
+import { useTransactionStream } from '../../hooks/useTransactionStream';
+import type { Transaction } from '../../types/finance.types';
 
-const CATEGORIES: (FinanceCategory | 'All')[] = [
+const CATEGORIES: string[] = [
   'All', 'Food', 'Travel', 'Shopping', 'Groceries', 'Bills',
-  'Entertainment', 'Healthcare', 'Subscriptions' as unknown as FinanceCategory,
-  'Salary', 'EMI', 'Transfers',
+  'Entertainment', 'Healthcare', 'Subscription', 'Salary', 'EMI', 'Transfers',
 ];
 
-const TYPE_FILTERS = ['All', 'Income', 'Expenses'];
+const TYPE_FILTERS = ['All', 'Income', 'Expenses'] as const;
+
+const STATUS_META: Record<string, { label: string; dot: string; text: string }> = {
+  connecting: { label: 'Connecting…', dot: 'bg-[var(--color-text-tertiary)]', text: 'text-[var(--color-text-tertiary)]' },
+  live: { label: 'Live', dot: 'bg-[var(--color-success-dark)]', text: 'text-[var(--color-success-dark)]' },
+  reconnecting: { label: 'Reconnecting…', dot: 'bg-[var(--color-warning-dark)]', text: 'text-[var(--color-warning-dark)]' },
+  offline: { label: 'Offline', dot: 'bg-[var(--color-text-tertiary)]', text: 'text-[var(--color-text-tertiary)]' },
+};
 
 function groupByDate(txns: Transaction[]): [string, Transaction[]][] {
   const grouped = new Map<string, Transaction[]>();
   for (const t of txns) {
-    const d = new Date(t.transactionDate);
-    const key = d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+    const key = new Date(t.transactionDate).toLocaleDateString('en-IN', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    });
     if (!grouped.has(key)) grouped.set(key, []);
     grouped.get(key)!.push(t);
   }
@@ -27,51 +36,36 @@ function groupByDate(txns: Transaction[]): [string, Transaction[]][] {
 }
 
 export default function Transactions() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<FinanceCategory | 'All'>('All');
-  const [typeFilter, setTypeFilter] = useState('All');
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const PAGE_SIZE = 30;
+  const [categoryFilter, setCategoryFilter] = useState<string>('All');
+  const [typeFilter, setTypeFilter] = useState<(typeof TYPE_FILTERS)[number]>('All');
 
-  const loadTransactions = useCallback(async (reset = false) => {
-    const skip = reset ? 0 : page * PAGE_SIZE;
-    setLoading(true);
-    try {
-      const data = await getTransactions({
-        type: typeFilter === 'Income' ? 'INCOME' : typeFilter === 'Expenses' ? 'EXPENSE' : undefined,
-        category: categoryFilter !== 'All' ? categoryFilter : undefined,
-        limit: PAGE_SIZE,
-        skip,
-      });
-      if (reset) setTransactions(data);
-      else setTransactions((prev) => [...prev, ...data]);
-      setHasMore(data.length === PAGE_SIZE);
-      if (!reset) setPage((p) => p + 1);
-    } finally {
-      setLoading(false);
-    }
-  }, [typeFilter, categoryFilter, page]);
+  const filters = useMemo(
+    () => ({
+      type:
+        typeFilter === 'Income' ? 'INCOME' : typeFilter === 'Expenses' ? 'EXPENSE' : undefined,
+      category: categoryFilter !== 'All' ? categoryFilter : undefined,
+    }),
+    [typeFilter, categoryFilter],
+  );
 
-  useEffect(() => {
-    setPage(0);
-    loadTransactions(true);
-  }, [typeFilter, categoryFilter]); // eslint-disable-line
+  const { transactions, loading, loadingMore, hasMore, loadMore, status } =
+    useTransactionStream(filters);
 
-  const filtered = transactions.filter((t) => {
-    if (!search) return true;
+  const filtered = useMemo(() => {
+    if (!search.trim()) return transactions;
     const q = search.toLowerCase();
-    return (
-      t.merchant?.toLowerCase().includes(q) ||
-      t.description?.toLowerCase().includes(q) ||
-      t.category.toLowerCase().includes(q)
+    return transactions.filter(
+      (t) =>
+        t.senderName?.toLowerCase().includes(q) ||
+        t.receiverName?.toLowerCase().includes(q) ||
+        t.description?.toLowerCase().includes(q) ||
+        t.category.toLowerCase().includes(q),
     );
-  });
+  }, [transactions, search]);
 
   const grouped = groupByDate(filtered);
+  const st = STATUS_META[status] ?? STATUS_META.connecting;
 
   return (
     <Layout title="Transactions">
@@ -79,17 +73,17 @@ export default function Transactions() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-h3 text-[var(--color-text-primary)]">Transactions</h1>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-[var(--color-text-tertiary)] bg-[var(--color-bg-tertiary)] px-3 py-1 rounded-full font-medium">
-              {filtered.length} records
-            </span>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-primary)] text-white text-xs font-bold hover:opacity-90 transition-opacity"
+          <div className="flex items-center gap-3">
+            <span
+              className={`flex items-center gap-1.5 text-xs font-semibold ${st.text}`}
+              title="Transactions sync from your mobile app in near real-time"
             >
-              <Plus className="w-3.5 h-3.5" />
-              Add
-            </button>
+              <span className={`w-2 h-2 rounded-full ${st.dot} ${status === 'live' ? 'animate-pulse' : ''}`} />
+              {st.label}
+            </span>
+            <span className="text-xs text-[var(--color-text-tertiary)] bg-[var(--color-bg-tertiary)] px-3 py-1 rounded-full font-medium">
+              {filtered.length} shown
+            </span>
           </div>
         </div>
 
@@ -131,7 +125,7 @@ export default function Transactions() {
           {CATEGORIES.map((c) => (
             <button
               key={c}
-              onClick={() => setCategoryFilter(c === 'All' ? 'All' : c as FinanceCategory)}
+              onClick={() => setCategoryFilter(c)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1 ${
                 categoryFilter === c
                   ? 'bg-[var(--color-primary)]/15 text-[var(--color-primary)] border border-[var(--color-primary)]/30'
@@ -154,13 +148,16 @@ export default function Transactions() {
         ) : grouped.length === 0 ? (
           <div className="text-center py-16 text-[var(--color-text-secondary)]">
             <Search className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">No transactions found</p>
-            <p className="text-xs mt-1 text-[var(--color-text-tertiary)]">
-              {search ? 'Try a different search term' : 'Sync your SMS to import transactions'}
+            <p className="font-medium">{search ? 'No transactions found' : 'No transactions yet'}</p>
+            <p className="text-xs mt-1 mb-5 text-[var(--color-text-tertiary)]">
+              {search
+                ? 'Try a different search term'
+                : 'Install the Koshpal app and your transactions import automatically from SMS.'}
             </p>
+            {!search && <GetAppButton />}
           </div>
         ) : (
-          <AnimatePresence>
+          <AnimatePresence initial={false}>
             {grouped.map(([date, txns]) => (
               <motion.div
                 key={date}
@@ -168,7 +165,6 @@ export default function Transactions() {
                 animate={{ opacity: 1 }}
                 className="bg-[var(--color-bg-card)] border border-[var(--color-border-primary)] rounded-2xl overflow-hidden"
               >
-                {/* Date header */}
                 <div className="px-4 py-3 bg-[var(--color-bg-secondary)] border-b border-[var(--color-border-primary)] flex items-center justify-between">
                   <span className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wide">{date}</span>
                   <span className="text-xs text-[var(--color-text-tertiary)]">
@@ -188,24 +184,14 @@ export default function Transactions() {
         {/* Load more */}
         {hasMore && !loading && (
           <button
-            onClick={() => loadTransactions(false)}
-            className="w-full py-3 rounded-xl border border-[var(--color-border-primary)] text-[var(--color-text-secondary)] text-sm font-semibold hover:bg-[var(--color-bg-card)] transition-all"
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="w-full py-3 rounded-xl border border-[var(--color-border-primary)] text-[var(--color-text-secondary)] text-sm font-semibold hover:bg-[var(--color-bg-card)] transition-all disabled:opacity-60"
           >
-            Load more transactions
+            {loadingMore ? 'Loading…' : 'Load more transactions'}
           </button>
         )}
       </div>
-
-      {showAddModal && (
-        <AddTransactionModal
-          onClose={() => setShowAddModal(false)}
-          onSuccess={() => {
-            setShowAddModal(false);
-            setPage(0);
-            loadTransactions(true);
-          }}
-        />
-      )}
     </Layout>
   );
 }

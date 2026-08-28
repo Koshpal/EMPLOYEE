@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Layout } from '../../components/common/Layout';
 import { ConsultationCard } from '../../components/cards/ConsultationCard';
 import { SessionDetailsModal } from '../../components/modals/SessionDetailsModal';
 import { coachService } from '../../services/coach.service';
 import type { Consultation } from '../../types/booking.types';
-import { Calendar, Clock, Filter, Search } from 'lucide-react';
+import { Calendar, Clock, Search } from 'lucide-react';
 
 const Sessions: React.FC = () => {
+  const navigate = useNavigate();
   const [sessions, setSessions] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
@@ -109,9 +111,6 @@ const Sessions: React.FC = () => {
                 className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-card)] text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
               />
             </div>
-            <button className="p-2.5 rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-card)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]">
-              <Filter className="w-5 h-5" />
-            </button>
           </div>
         </div>
 
@@ -129,6 +128,7 @@ const Sessions: React.FC = () => {
                 key={session.id}
                 consultation={session}
                 onViewDetails={handleViewDetails}
+                onBookAgain={(coachId) => navigate(`/coaches?coach=${coachId}`)}
               />
             ))}
           </div>
@@ -147,7 +147,7 @@ const Sessions: React.FC = () => {
             </p>
             {activeTab === 'upcoming' && (
               <button 
-                onClick={() => window.location.href = '/coaches'}
+                onClick={() => navigate('/coaches')}
                 className="mt-6 bg-[var(--color-primary)] text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:opacity-90"
               >
                 Book Your First Session

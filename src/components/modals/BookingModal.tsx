@@ -134,6 +134,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
     });
   };
 
+  const slotDurationMin = (slot: Slot) =>
+    Math.round((new Date(slot.endTime).getTime() - new Date(slot.startTime).getTime()) / 60000);
+
   const renderCalendar = () => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
@@ -173,7 +176,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
   if (!isOpen || !coach) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in" onClick={onClose}>
       <div className="bg-[var(--color-bg-card)] w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-slide-up" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="p-6 border-b border-[var(--color-border-primary)] flex items-center justify-between">
@@ -254,7 +257,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
                           >
                             <div className="flex items-center gap-3">
                               <Clock className={`w-5 h-5 ${isSelected ? 'text-white' : 'text-[var(--color-text-secondary)]'}`} />
-                              <span className="font-bold">{formatTime(slot.startTime)}</span>
+                              <span className="font-bold">
+                                {formatTime(slot.startTime)} &ndash; {formatTime(slot.endTime)}
+                              </span>
+                              <span className={`text-xs font-semibold ${isSelected ? 'text-white/70' : 'text-[var(--color-text-tertiary)]'}`}>
+                                {slotDurationMin(slot)} min
+                              </span>
                             </div>
                             {isSelected && <Check className="w-5 h-5" />}
                           </button>
@@ -297,7 +305,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
                     </div>
                     <div>
                       <p className="text-xs text-[var(--color-text-secondary)] uppercase font-bold tracking-wider">Time</p>
-                      <p className="font-bold text-[var(--color-text-primary)]">{selectedSlot && formatTime(selectedSlot.startTime)} (IST)</p>
+                      <p className="font-bold text-[var(--color-text-primary)]">
+                        {selectedSlot && `${formatTime(selectedSlot.startTime)} – ${formatTime(selectedSlot.endTime)}`} (IST)
+                      </p>
                     </div>
                   </div>
                 </div>

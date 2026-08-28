@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink, User as UserIcon, Calendar, MessageSquare } from 'lucide-react';
+import { ExternalLink, User as UserIcon, Calendar, MessageSquare, RotateCcw } from 'lucide-react';
 import type { Consultation } from '../../types/booking.types';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
@@ -7,11 +7,13 @@ import { Badge } from '../ui/Badge';
 interface ConsultationCardProps {
   consultation: Consultation;
   onViewDetails?: (id: string) => void;
+  onBookAgain?: (coachId: string) => void;
 }
 
-export const ConsultationCard: React.FC<ConsultationCardProps> = ({ consultation, onViewDetails }) => {
+export const ConsultationCard: React.FC<ConsultationCardProps> = ({ consultation, onViewDetails, onBookAgain }) => {
   if (!consultation || !consultation.slot) return null;
   const isUpcoming = new Date(consultation.slot.startTime) > new Date();
+  const isPast = !isUpcoming;
 
   const formatDateTime = (startTime: string) => {
     const date = new Date(startTime);
@@ -73,15 +75,26 @@ export const ConsultationCard: React.FC<ConsultationCardProps> = ({ consultation
               <ExternalLink className="w-3.5 h-3.5" />
             </Button>
           )}
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className="gap-2"
             onClick={() => onViewDetails?.(consultation.id)}
           >
             Details
             <MessageSquare className="w-3.5 h-3.5" />
           </Button>
+          {isPast && onBookAgain && consultation.coach?.id && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2"
+              onClick={() => onBookAgain(consultation.coach.id)}
+            >
+              Book again
+              <RotateCcw className="w-3.5 h-3.5" />
+            </Button>
+          )}
         </div>
       </div>
       

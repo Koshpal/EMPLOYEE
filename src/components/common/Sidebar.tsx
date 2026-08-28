@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { getUnreadInsightCount } from '../../services/finance.service';
 import {
   Home,
   Users,
@@ -9,6 +10,8 @@ import {
   BookOpen,
   TrendingUp,
   Target,
+  ArrowLeftRight,
+  type LucideIcon,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -18,12 +21,27 @@ interface SidebarProps {
   onToggleCollapse?: () => void;
 }
 
-const menuItems = [
+interface MenuItem {
+  icon: LucideIcon;
+  label: string;
+  path: string;
+  children?: { icon: LucideIcon; label: string; path: string }[];
+}
+
+const menuItems: MenuItem[] = [
   { icon: Home, label: 'Dashboard', path: '/dashboard' },
   { icon: Users, label: 'Coaches', path: '/coaches' },
   { icon: BookOpen, label: 'Sessions', path: '/sessions' },
   { icon: Calendar, label: 'Calendar', path: '/calendar' },
-  { icon: TrendingUp, label: 'Finance', path: '/finance' },
+  {
+    icon: TrendingUp,
+    label: 'Finance',
+    path: '/finance',
+    children: [
+      { icon: ArrowLeftRight, label: 'Transactions', path: '/finance/transactions' },
+      { icon: Target, label: 'Goals', path: '/finance/goals' },
+    ],
+  },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -34,6 +52,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [unreadInsights, setUnreadInsights] = useState(0);
+
+  useEffect(() => {
+    getUnreadInsightCount().then(setUnreadInsights).catch(() => setUnreadInsights(0));
+  }, [location.pathname]);
 
   const isActive = (path: string) =>
     path === '/finance'
@@ -98,7 +121,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 const Icon = item.icon;
                 const active = isActive(item.path);
                 const isFinance = item.path === '/finance';
-                const financeActive = location.pathname.startsWith('/finance');
 
                 return (
                   <React.Fragment key={item.path}>
@@ -125,21 +147,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             {item.label}
                           </span>
                         )}
+                        {isFinance && unreadInsights > 0 && (
+                          <span
+                            className={`${isCollapsed ? 'absolute top-2 right-3' : 'ml-auto'} min-w-[18px] h-[18px] px-1 rounded-full bg-[var(--color-primary)] text-white text-[10px] font-bold flex items-center justify-center`}
+                          >
+                            {unreadInsights > 9 ? '9+' : unreadInsights}
+                          </span>
+                        )}
                       </button>
                     </li>
-                    {isFinance && financeActive && !isCollapsed && (
+
+                    {/* Always-visible sub-items, visually nested under the parent */}
+                    {item.children && !isCollapsed && (
                       <li>
-                        <button
-                          onClick={() => { navigate('/finance/goals'); onClose(); }}
-                          className={`group w-full flex items-center gap-2 pl-14 pr-6 py-2.5 text-sm transition-all duration-200 relative ${
-                            location.pathname === '/finance/goals'
-                              ? 'text-[var(--color-primary)] font-semibold'
-                              : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
-                          }`}
-                        >
-                          <Target className="w-4 h-4 flex-shrink-0" />
-                          <span>Goals</span>
-                        </button>
+                        <ul className="relative ml-[38px] my-1 space-y-0.5 border-l border-[var(--color-border-primary)]">
+                          {item.children.map((child) => {
+                            const ChildIcon = child.icon;
+                            const childActive = location.pathname === child.path;
+                            return (
+                              <li key={child.path}>
+                                <button
+                                  onClick={() => { navigate(child.path); onClose(); }}
+                                  className={`group relative w-full flex items-center gap-2.5 pl-4 pr-6 py-2 text-sm rounded-r-lg transition-all duration-200 ${
+                                    childActive
+                                      ? 'text-[var(--color-primary)] font-semibold bg-[var(--color-primary)]/5'
+                                      : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]'
+                                  }`}
+                                >
+                                  {childActive && (
+                                    <span className="absolute -left-px w-0.5 h-5 bg-[var(--color-primary)] rounded-full" />
+                                  )}
+                                  <ChildIcon className="w-4 h-4 flex-shrink-0" />
+                                  <span>{child.label}</span>
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
                       </li>
                     )}
                   </React.Fragment>

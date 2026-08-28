@@ -51,8 +51,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (credentials: any) => {
     const response = await employeeService.login(credentials);
-    setUser(response.user);
-    localStorage.setItem('user', JSON.stringify(response.user));
+    // Hydrate from /auth/me so `user` has the same shape everywhere (name,
+    // phone, isActive) instead of the leaner login-response shape.
+    let user: AuthResponse['user'] = response.user;
+    try {
+      const me = await employeeService.getCurrentUser();
+      if (me) user = me;
+    } catch {
+      /* fall back to the login response */
+    }
+    setUser(user);
+    localStorage.setItem('user', JSON.stringify(user));
   };
 
   const logout = async () => {
