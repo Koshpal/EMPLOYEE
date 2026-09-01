@@ -215,3 +215,89 @@ export interface UpdateGoalPayload {
   savedAmount?: number;
   goalDate?: string;
 }
+
+// ─── Budgets ─────────────────────────────────────────────────────────────────
+// Matches BACKEND `budgets` module (CreateBudgetDto + toBudgetResponse).
+export type BudgetKind = 'RECURRING' | 'ONE_TIME';
+export type BudgetPeriod = 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+
+/** Budget response — categories & sub-categories flattened; subs carry a
+ *  non-null `parentCategoryId`. */
+export interface BudgetCategoryRow {
+  id: string;
+  name: string;
+  iconResId: string | null;
+  colorHex: string;
+  parentCategoryId: string | null;
+  allottedAmount: number;
+}
+
+export interface Budget {
+  id: string;
+  title: string;
+  amount: number;
+  period: BudgetPeriod | null;
+  startDate: string;   // ISO
+  endDate: string | null;
+  budgetType: BudgetKind;
+  categories: BudgetCategoryRow[];
+}
+
+/** What we send when creating/updating a budget. */
+export interface BudgetSubCategoryInput {
+  name: string;
+  allottedAmount: number;
+}
+export interface BudgetCategoryInput {
+  name: string;
+  allottedAmount: number;
+  colorHex?: string;
+  iconResId?: string;
+  subCategories?: BudgetSubCategoryInput[];
+}
+export interface CreateBudgetPayload {
+  title: string;
+  amount: number;
+  budgetType: BudgetKind;
+  period?: BudgetPeriod;
+  startDate: string;   // ISO 8601
+  endDate?: string;
+  categories?: BudgetCategoryInput[];
+}
+export type UpdateBudgetPayload = Partial<CreateBudgetPayload>;
+
+export interface BudgetProgressSub {
+  id: string;
+  name: string;
+  allocated: number;
+  spent: number;
+  remaining: number;
+  percentageSpent: number;
+  overBudget: boolean;
+}
+export interface BudgetProgressCategory {
+  id: string;
+  category: string;
+  allocated: number;
+  spent: number;
+  remaining: number;
+  percentageSpent: number;
+  overBudget: boolean;
+  color: string | null;
+  icon: string | null;
+  subCategories: BudgetProgressSub[];
+}
+export interface BudgetProgress {
+  budgetId: string;
+  name: string;
+  type: BudgetKind;
+  frequency: BudgetPeriod | null;
+  periodStart: string;
+  periodEnd: string;
+  totalBudget: number;
+  totalSpent: number;
+  remaining: number;
+  percentageSpent: number;
+  overBudget: boolean;
+  categories: BudgetProgressCategory[];
+}

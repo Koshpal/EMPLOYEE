@@ -20,6 +20,7 @@ import WellnessScore from './pages/Finance/WellnessScore';
 import Insights from './pages/Finance/Insights';
 import ConsentGate from './pages/Finance/ConsentGate';
 import Goals from './pages/Finance/Goals';
+import Budgets from './pages/Finance/Budgets';
 
 
 
@@ -47,6 +48,7 @@ function App() {
       <Route path="/finance/insights" element={<ProtectedRoute><Insights /></ProtectedRoute>} />
       <Route path="/finance/consent" element={<ProtectedRoute><ConsentGate /></ProtectedRoute>} />
       <Route path="/finance/goals" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
+      <Route path="/finance/budgets" element={<ProtectedRoute><Budgets /></ProtectedRoute>} />
 
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -10,6 +10,7 @@ import {
   BookOpen,
   TrendingUp,
   Target,
+  Wallet,
   ArrowLeftRight,
   type LucideIcon,
 } from 'lucide-react';
@@ -39,6 +40,7 @@ const menuItems: MenuItem[] = [
     path: '/finance',
     children: [
       { icon: ArrowLeftRight, label: 'Transactions', path: '/finance/transactions' },
+      { icon: Wallet, label: 'Budgets', path: '/finance/budgets' },
       { icon: Target, label: 'Goals', path: '/finance/goals' },
     ],
   },

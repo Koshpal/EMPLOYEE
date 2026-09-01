@@ -13,6 +13,10 @@ import type {
   FinancialGoal,
   CreateGoalPayload,
   UpdateGoalPayload,
+  Budget,
+  BudgetProgress,
+  CreateBudgetPayload,
+  UpdateBudgetPayload,
 } from '../types/finance.types';
 
 const BASE = '/finance';
@@ -161,6 +165,36 @@ export const updateGoal = async (goalId: string, payload: UpdateGoalPayload): Pr
 
 export const deleteGoal = async (goalId: string): Promise<void> => {
   await axiosInstance.delete(`/employee/goals/${goalId}`);
+};
+
+// --- Budgets ---
+export const getBudgets = async (): Promise<Budget[]> => {
+  const res = await axiosInstance.get('/budgets');
+  return Array.isArray(res.data) ? res.data : res.data.data ?? [];
+};
+
+export const getBudget = async (id: string): Promise<Budget> => {
+  const res = await axiosInstance.get(`/budgets/${id}`);
+  return res.data;
+};
+
+export const getBudgetProgress = async (id: string): Promise<BudgetProgress> => {
+  const res = await axiosInstance.get(`/budgets/${id}/progress`);
+  return res.data;
+};
+
+export const createBudget = async (payload: CreateBudgetPayload): Promise<Budget> => {
+  const res = await axiosInstance.post('/budgets', payload);
+  return res.data;
+};
+
+export const updateBudget = async (id: string, payload: UpdateBudgetPayload): Promise<Budget> => {
+  const res = await axiosInstance.patch(`/budgets/${id}`, payload);
+  return res.data;
+};
+
+export const deleteBudget = async (id: string): Promise<void> => {
+  await axiosInstance.delete(`/budgets/${id}`);
 };
 
 // --- SMS Sync ---
