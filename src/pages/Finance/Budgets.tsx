@@ -22,17 +22,29 @@ function formatINR(n: number) {
 
 const PERIODS: BudgetPeriod[] = ['WEEKLY', 'MONTHLY', 'YEARLY'];
 
+/** A budget may hold categories outside the default set — never crash on it. */
+function catMeta(catId: string): { id: string; name: string; icon: string; color: string } {
+  return (
+    DEFAULT_CATEGORIES.find((c) => c.id === catId) ?? {
+      id: catId,
+      name: catId,
+      icon: 'category',
+      color: '#334eac',
+    }
+  );
+}
+
 // ── the picker's working model ──────────────────────────────────────────────
 interface DraftSub { name: string; icon: string; amount: string; on: boolean; existingId?: string }
 interface DraftCat { catId: string; amount: string; subs: DraftSub[]; existingId?: string }
 
 function draftFromBudget(b?: Budget | null): DraftCat[] {
   if (!b) return [];
-  const tops = b.categories.filter((c) => !c.parentCategoryId);
+  const tops = (b.categories ?? []).filter((c) => !c.parentCategoryId);
   return tops.map((top) => {
     const cat = categoryByName(top.name);
     const catId = cat?.id ?? top.name;
-    const savedSubs = b.categories.filter((c) => c.parentCategoryId === top.id);
+    const savedSubs = (b.categories ?? []).filter((c) => c.parentCategoryId === top.id);
     const subs: DraftSub[] = subCategoriesOf(catId).map((s) => {
       const saved = savedSubs.find((x) => x.name.toLowerCase() === s.name.toLowerCase());
       return {
@@ -41,6 +53,12 @@ function draftFromBudget(b?: Budget | null): DraftCat[] {
         on: !!saved, existingId: saved?.id,
       };
     });
+    // keep any saved sub that isn't in the default set so re-saving doesn't drop it
+    for (const saved of savedSubs) {
+      if (!subs.some((x) => x.name.toLowerCase() === saved.name.toLowerCase())) {
+        subs.push({ name: saved.name, icon: 'category', amount: String(saved.allottedAmount), on: true, existingId: saved.id });
+      }
+    }
     return { catId, amount: String(top.allottedAmount), subs, existingId: top.id };
   });
 }
@@ -100,8 +118,7 @@ function BudgetModal({ budget, onClose, onSave }: ModalProps) {
       const catAmt = Number(d.amount) || 0;
       const subTotal = d.subs.filter((s) => s.on).reduce((s, x) => s + (Number(x.amount) || 0), 0);
       if (subTotal > catAmt) {
-        const cat = DEFAULT_CATEGORIES.find((c) => c.id === d.catId);
-        return setError(`Sub-category allocations exceed ${cat?.name ?? 'category'} allocation`);
+        return setError(`Sub-category allocations exceed ${catMeta(d.catId).name} allocation`);
       }
     }
 
@@ -124,7 +141,7 @@ function BudgetModal({ budget, onClose, onSave }: ModalProps) {
         // can't be attached in the same call — save, then reopen to add them.
         const flat: any[] = [];
         for (const d of drafts) {
-          const cat = DEFAULT_CATEGORIES.find((c) => c.id === d.catId)!;
+          const cat = catMeta(d.catId);
           flat.push({
             ...(d.existingId ? { id: d.existingId } : {}),
             name: cat.name,
@@ -146,7 +163,7 @@ function BudgetModal({ budget, onClose, onSave }: ModalProps) {
       } else {
         // CREATE: nested categories with subCategories
         const categories = drafts.map((d) => {
-          const cat = DEFAULT_CATEGORIES.find((c) => c.id === d.catId)!;
+          const cat = catMeta(d.catId);
           const subCategories = d.subs
             .filter((s) => s.on)
             .map((s) => ({ name: s.name, allottedAmount: Number(s.amount) || 0 }));
@@ -265,7 +282,7 @@ function BudgetModal({ budget, onClose, onSave }: ModalProps) {
 
           {/* Per-selected-category amount + sub-categories */}
           {drafts.map((d) => {
-            const cat = DEFAULT_CATEGORIES.find((c) => c.id === d.catId)!;
+            const cat = catMeta(d.catId);
             const subs = subCategoriesOf(d.catId);
             const Icon = iconFor(cat.icon);
             return (
@@ -343,7 +360,7 @@ function BudgetCard({
   const spent = progress?.totalSpent ?? 0;
   const pct = progress ? Math.min(100, progress.percentageSpent) : 0;
   const over = progress?.overBudget ?? false;
-  const tops = budget.categories.filter((c) => !c.parentCategoryId);
+  const tops = (budget.categories ?? []).filter((c) => !c.parentCategoryId);
 
   return (
     <motion.div {...fadeUp} className="bg-[var(--color-bg-card)] border border-[var(--color-border-primary)] rounded-2xl p-5 group">
