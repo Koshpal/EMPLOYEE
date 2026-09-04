@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { RefreshCw, TrendingUp, CreditCard, Activity, Shield, Repeat, CheckCircle } from 'lucide-react';
 import { Layout } from '../../components/common/Layout';
 import { ScoreRing } from '../../components/finance/ScoreRing';
+import { Skeleton } from '../../components/common/Skeleton';
+import { useAsync } from '../../hooks/useAsync';
 import { getLatestScore, getScoreHistory, calculateScore } from '../../services/finance.service';
 import type { FinancialScore } from '../../types/finance.types';
 
@@ -25,44 +27,30 @@ const COMPONENTS: ScoreComponent[] = [
 ];
 
 export default function WellnessScore() {
-  const [score, setScore] = useState<FinancialScore | null>(null);
-  const [history, setHistory] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const scoreRes = useAsync(() => getLatestScore(), []);
+  const historyRes = useAsync(() => getScoreHistory(6), []);
   const [recalculating, setRecalculating] = useState(false);
 
-  useEffect(() => {
-    Promise.allSettled([getLatestScore(), getScoreHistory(6)]).then(([s, h]) => {
-      if (s.status === 'fulfilled') setScore(s.value);
-      if (h.status === 'fulfilled') setHistory(h.value);
-    }).finally(() => setLoading(false));
-  }, []);
+  const score: FinancialScore | null = scoreRes.data ?? null;
+  const history: FinancialScore[] = historyRes.data ?? [];
 
   const handleRecalculate = async () => {
     setRecalculating(true);
     try {
-      const newScore = await calculateScore();
-      setScore(newScore);
-      const hist = await getScoreHistory(6);
-      setHistory(hist);
+      await calculateScore();
+      scoreRes.reload();
+      historyRes.reload();
     } finally {
       setRecalculating(false);
     }
   };
 
   const historyData = history.map((h) => ({
-    date: new Date(h.scoreDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+    date: h.scoreDate
+      ? new Date(h.scoreDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+      : '',
     Score: h.score,
   }));
-
-  if (loading) {
-    return (
-      <Layout title="Wellness Score">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-primary)]" />
-        </div>
-      </Layout>
-    );
-  }
 
   return (
     <Layout title="Financial Wellness Score">
@@ -91,7 +79,11 @@ export default function WellnessScore() {
           animate={{ opacity: 1, scale: 1 }}
           className="bg-[var(--color-bg-card)] border border-[var(--color-border-primary)] rounded-2xl p-8 flex flex-col items-center gap-6"
         >
-          <ScoreRing score={score?.score ?? 0} size={160} strokeWidth={14} />
+          {scoreRes.loading ? (
+            <Skeleton className="h-[160px] w-[160px] rounded-full" />
+          ) : (
+            <ScoreRing score={score?.score ?? 0} size={160} strokeWidth={14} />
+          )}
           <div className="text-center max-w-xs">
             <p className="text-body-md text-[var(--color-text-secondary)]">
               Your financial wellness is measured across 5 key dimensions. Higher score = healthier financial behavior.
@@ -103,7 +95,11 @@ export default function WellnessScore() {
         <div className="bg-[var(--color-bg-card)] border border-[var(--color-border-primary)] rounded-2xl p-6">
           <h3 className="text-h5 text-[var(--color-text-primary)] mb-5">Score Breakdown</h3>
           <div className="space-y-5">
-            {COMPONENTS.map((comp, i) => {
+            {scoreRes.loading &&
+              Array.from({ length: COMPONENTS.length }).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            {!scoreRes.loading && COMPONENTS.map((comp, i) => {
               const Icon = comp.icon;
               const value = score ? (score[comp.key] as number) ?? 0 : 0;
               const pct = Math.round((value / comp.max) * 100);
@@ -143,7 +139,12 @@ export default function WellnessScore() {
         </div>
 
         {/* Score History */}
-        {historyData.length > 1 && (
+        {historyRes.loading ? (
+          <div className="bg-[var(--color-bg-card)] border border-[var(--color-border-primary)] rounded-2xl p-6">
+            <h3 className="text-h5 text-[var(--color-text-primary)] mb-4">Score History</h3>
+            <Skeleton className="h-[180px] w-full" />
+          </div>
+        ) : historyData.length > 1 && (
           <div className="bg-[var(--color-bg-card)] border border-[var(--color-border-primary)] rounded-2xl p-6">
             <h3 className="text-h5 text-[var(--color-text-primary)] mb-4">Score History</h3>
             <ResponsiveContainer width="100%" height={180}>

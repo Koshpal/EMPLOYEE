@@ -29,6 +29,8 @@ export interface Consultation {
   status: 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
   bookedAt: string;
   hasFeedback?: boolean;
+  /** The employee's own star rating for this session (1–5), null until rated. */
+  feedbackRating?: number | null;
   slot: Slot;
   coach: Coach;
 }

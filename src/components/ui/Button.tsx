@@ -12,6 +12,11 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
 }
 
+/**
+ * Figma "Button" component (Financial Dashboard — Employee).
+ * Radius 8, Outfit label, 40px (md) / 48px (lg) height, outline uses the
+ * Neutral/100 border.
+ */
 export const Button: React.FC<ButtonProps> = ({
   children,
   className,
@@ -22,33 +27,38 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const variants = {
-    primary: 'bg-[var(--color-primary)] text-[var(--color-text-inverse)] hover:opacity-90 shadow-[0_4px_16px_rgba(51,78,172,0.3)]',
-    secondary: 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]',
-    outline: 'bg-transparent border-2 border-[var(--color-border-primary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)]',
-    ghost: 'bg-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)]',
-    danger: 'bg-[var(--color-error)] text-[var(--color-text-inverse)] hover:opacity-90',
+    primary:
+      'bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-darkest)] shadow-[var(--shadow-drop-low)]',
+    secondary:
+      'bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] hover:bg-[var(--color-border-primary)]',
+    outline:
+      'bg-[var(--color-bg-card)] border border-[var(--color-border-primary)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]',
+    ghost:
+      'bg-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-text-primary)]',
+    danger:
+      'bg-[var(--color-error)] text-white hover:bg-[var(--color-error-dark)]',
   };
 
   const sizes = {
-    sm: 'px-3 py-1.5 text-xs',
-    md: 'px-4 py-2.5 text-sm',
-    lg: 'px-6 py-3.5 text-base',
-    icon: 'p-2',
+    sm: 'h-9 px-3.5 text-[13px]',
+    md: 'h-10 px-4 text-sm',
+    lg: 'h-12 px-6 text-base',
+    icon: 'h-10 w-10 p-0',
   };
 
   return (
     <button
       className={cn(
-        'inline-flex items-center justify-center rounded-lg font-bold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed',
+        'inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] font-medium leading-none whitespace-nowrap transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed',
         variants[variant],
         sizes[size],
-        className
+        className,
       )}
       disabled={disabled || loading}
       {...props}
     >
       {loading ? (
-        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
       ) : null}
       {children}
     </button>

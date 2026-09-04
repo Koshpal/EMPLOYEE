@@ -4,6 +4,8 @@ import { Target, Plus, Pencil, Trash2, X, CalendarDays, TrendingUp, CheckCircle2
 import { Layout } from '../../components/common/Layout';
 import { getGoals, createGoal, updateGoal, deleteGoal } from '../../services/finance.service';
 import type { FinancialGoal, CreateGoalPayload } from '../../types/finance.types';
+import { FinanceTabs } from '../../components/finance/FinanceTabs';
+import { IconBell, IconSettings2 } from '../../components/icons/figma';
 
 const fadeUp = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 } };
 
@@ -390,26 +392,32 @@ export default function Goals() {
   const totalSaved = goals.reduce((s, g) => s + g.savedAmount, 0);
   const overallProgress = totalTarget > 0 ? Math.min(100, (totalSaved / totalTarget) * 100) : 0;
 
-  return (
-    <Layout title="Financial Goals">
-      <div className="max-w-7xl mx-auto space-y-6 pb-8">
-        {/* Header */}
-        <motion.div {...fadeUp} className="flex items-center justify-between">
-          <div>
-            <h1 className="text-h2 text-[var(--color-text-primary)]">Financial Goals</h1>
-            <p className="text-body-md text-[var(--color-text-secondary)] mt-1">
-              Track and manage your savings targets
-            </p>
-          </div>
-          <button
-            onClick={() => { setEditGoal(null); setShowModal(true); }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--color-primary)] text-white text-sm font-semibold hover:opacity-90 transition-all shadow-sm"
-          >
-            <Plus className="w-4 h-4" />
-            Add Goal
-          </button>
-        </motion.div>
+  const iconBtn =
+    'flex h-10 items-center justify-center rounded-[8px] border border-[var(--color-border-primary)] px-2.5 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)] transition-colors';
 
+  const headerActions = (
+    <>
+      <button className={iconBtn} aria-label="Notifications"><IconBell size={20} /></button>
+      <button className={iconBtn} aria-label="Settings"><IconSettings2 size={20} /></button>
+    </>
+  );
+
+  const headerBelow = (
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <FinanceTabs active="Goals" />
+      <button
+        onClick={() => { setEditGoal(null); setShowModal(true); }}
+        className="flex h-10 items-center gap-1 rounded-[8px] bg-[var(--color-primary)] pl-2.5 pr-4 text-[14px] leading-6 text-white transition-colors hover:bg-[var(--color-primary-darkest)]"
+      >
+        <Plus className="h-5 w-5" />
+        Add Goal
+      </button>
+    </div>
+  );
+
+  return (
+    <Layout title="Financial Goals" headerActions={headerActions} headerBelow={headerBelow}>
+      <div className="max-w-7xl mx-auto space-y-6 pb-8">
         {/* Summary cards */}
         {goals.length > 0 && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

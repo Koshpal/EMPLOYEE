@@ -1,232 +1,224 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Layout } from '../../components/common/Layout';
-import { StatCard } from '../../components/cards/StatCard';
-import { YourSessionCard } from '../../components/cards/YourSessionCard';
-import { GetStartedCard } from '../../components/onboarding/GetStartedCard';
 import { SessionDetailsModal } from '../../components/modals/SessionDetailsModal';
+import { useAsync } from '../../hooks/useAsync';
 import { coachService } from '../../services/coach.service';
+import {
+  getWellnessOverview, getAnalyticsOverview, getSpendingTrends, getGoals,
+  getBudgets, getBudgetProgress, getConsent,
+} from '../../services/finance.service';
 import type { Consultation, ConsultationStats } from '../../types/booking.types';
-import { Calendar, CheckCircle, Clock, Rocket, Users, X } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { useActivation } from '../../hooks/useActivation';
+import type {
+  WellnessOverview, AnalyticsOverview, FinancialGoal, Budget, BudgetProgress,
+} from '../../types/finance.types';
+import {
+  SummarySection, UpcomingSessionCard, IncomeExpenseChart,
+  SpendsByCategoryCard, GoalsCompletionCard, FinancialGoalsTable, BudgetsWidget,
+  DuesReminderCard,
+} from '../../components/dashboard/widgets';
+import { SUMMARY_STYLES, inr, type GoalRow } from '../../components/dashboard/helpers';
 
-const BANNER_DISMISS_KEY = 'employee_dash_banner_dismissed_at';
+const fadeUp = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 } };
+
+function fmtDay(iso?: string) {
+  if (!iso) return { month: '—', day: '—', weekday: '' };
+  const d = new Date(iso);
+  return {
+    month: d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase(),
+    day: String(d.getDate()),
+    weekday: d.toLocaleDateString('en-US', { weekday: 'long' }),
+  };
+}
+function fmtTimeRange(start?: string, end?: string) {
+  if (!start) return '';
+  const opts: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' };
+  const s = new Date(start).toLocaleTimeString('en-US', opts);
+  const e = end ? new Date(end).toLocaleTimeString('en-US', opts) : '';
+  return e ? `${s}-${e}` : s;
+}
+function fmtDate(iso: string) {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { status: activation, isComplete: activationComplete, done } = useActivation();
-  const [stats, setStats] = useState<ConsultationStats | null>(null);
-  const [latestSession, setLatestSession] = useState<Consultation | null>(null);
-  const [consultations, setConsultations] = useState<Consultation[]>([]);
-  const [feedbackFor, setFeedbackFor] = useState<Consultation | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [bannerDismissed, setBannerDismissed] = useState(
-    () => !!localStorage.getItem(BANNER_DISMISS_KEY),
+  const [detailsFor, setDetailsFor] = useState<Consultation | null>(null);
+
+  // Each domain loads independently: fast endpoints paint immediately, slow ones
+  // fill in with their own skeleton. No single page-wide spinner.
+  const statsRes = useAsync(() => coachService.getMyConsultationStats(), []);
+  const latestRes = useAsync(() => coachService.getLatestConsultation(), []);
+  const wellnessRes = useAsync(() => getWellnessOverview(), []);
+  const analyticsRes = useAsync(() => getAnalyticsOverview(), []);
+  const trendsRes = useAsync(() => getSpendingTrends(6), []);
+  const goalsRes = useAsync(() => getGoals(), []);
+  const budgetsRes = useAsync<Budget[]>(
+    () =>
+      getConsent()
+        .then((c) => (c.hasConsented ? getBudgets() : ([] as Budget[])))
+        .catch(() => [] as Budget[]),
+    [],
   );
 
-  useEffect(() => {
-    const run = async () => {
-      try {
-        const [statsData, latestData, list] = await Promise.all([
-          coachService.getMyConsultationStats(),
-          coachService.getLatestConsultation(),
-          coachService.getMyConsultations().catch(() => [] as Consultation[]),
-        ]);
-        setStats(statsData);
-        setLatestSession(latestData);
-        setConsultations(list);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    run();
-  }, []);
+  const stats: ConsultationStats | null = statsRes.data ?? null;
+  const latest: Consultation | null = latestRes.data ?? null;
+  const wellness: WellnessOverview | null = wellnessRes.data ?? null;
+  const analytics: AnalyticsOverview | null = analyticsRes.data ?? null;
+  // Memoised so their identity is stable for the downstream useMemo deps.
+  const goals: FinancialGoal[] = useMemo(() => goalsRes.data ?? [], [goalsRes.data]);
+  const budgets: Budget[] = useMemo(() => budgetsRes.data ?? [], [budgetsRes.data]);
 
-  // Prompt for feedback once on the most recent finished session that has none.
-  useEffect(() => {
-    const now = Date.now();
-    const pending = consultations
-      .filter(
-        (c) =>
-          c.slot?.startTime &&
-          new Date(c.slot.startTime).getTime() < now &&
-          c.status !== 'CANCELLED' &&
-          !c.hasFeedback,
-      )
-      .sort(
-        (a, b) => new Date(b.slot.startTime).getTime() - new Date(a.slot.startTime).getTime(),
-      )[0];
-    if (!pending) return;
-    const seen = localStorage.getItem(`feedback_prompted_${pending.id}`);
-    if (seen) return;
-    localStorage.setItem(`feedback_prompted_${pending.id}`, '1');
-    setFeedbackFor(pending);
-  }, [consultations]);
+  const trends = useMemo(
+    () =>
+      (trendsRes.data?.trends ?? []).slice(-7).map((t) => ({
+        name: t.period,
+        Income: t.totalIncome,
+        Expense: t.totalExpense,
+      })),
+    [trendsRes.data],
+  );
 
-  const banner = useMemo(() => {
-    if (!stats) return null;
-    if (stats.total === 0) {
-      return {
-        title: 'Unlock your potential with personalized coaching',
-        body: 'Book a free 1-on-1 with a financial coach — pick a time that suits you.',
-        cta: 'Find a coach',
-        to: '/coaches',
-      };
-    }
-    if (activation && !done('consent')) {
-      return {
-        title: 'See where your money goes',
-        body: 'Turn on financial tracking to unlock your wellness score, spending breakdown and insights.',
-        cta: 'Set it up',
-        to: '/finance/consent',
-      };
-    }
-    if (activation && !done('goal')) {
-      return {
-        title: 'Give your savings a target',
-        body: 'Set a goal and track your progress toward it every month.',
-        cta: 'Add a goal',
-        to: '/finance/goals?new=1',
-      };
-    }
-    return {
-      title: 'Keep the momentum going',
-      body: 'Review your latest insights and book your next coaching session.',
-      cta: 'View finance',
-      to: '/finance',
-    };
-  }, [stats, activation, done]);
-
-  if (loading) {
-    return (
-      <Layout title="Dashboard">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-primary)]"></div>
-        </div>
-      </Layout>
+  // Budget progress depends on the budgets list; fetches once it lands.
+  const progressRes = useAsync<Record<string, BudgetProgress>>(async () => {
+    const list = budgetsRes.data ?? [];
+    const entries = await Promise.all(
+      list.slice(0, 3).map(async (b) => {
+        try { return [b.id, await getBudgetProgress(b.id)] as const; } catch { return null; }
+      }),
     );
-  }
+    return Object.fromEntries(entries.filter(Boolean) as [string, BudgetProgress][]);
+  }, [budgetsRes.data]);
+  const budgetProgress: Record<string, BudgetProgress> = progressRes.data ?? {};
 
-  const milestone = !activationComplete && activation
-    ? {
-        title: 'Getting started',
-        value: `${activation.completedCount}/${activation.total}`,
-        description: 'Setup steps done',
-      }
-    : {
-        title: 'This month',
-        value: stats?.thisMonth ?? 0,
-        description: 'Sessions this month',
-      };
+  const summaryTiles = useMemo(() => {
+    const totalBudgeted = budgets.reduce((s, b) => s + b.amount, 0);
+    return [
+      {
+        label: 'Spendings',
+        value: inr(wellness?.monthlyExpenses ?? 0),
+        suffix: `/ ${inr(wellness?.monthlyIncome ?? 0)}`,
+        note: wellness
+          ? `${wellness.expenseChange > 0 ? '+' : ''}${wellness.expenseChange}% vs last month`
+          : 'This month',
+        noteIcon: 'trend' as const,
+        ...SUMMARY_STYLES.spendings,
+      },
+      {
+        label: 'BUDGET',
+        value: inr(totalBudgeted),
+        note: budgets.length ? `Across ${budgets.length} budget${budgets.length > 1 ? 's' : ''}` : 'Similar to last month',
+        noteIcon: 'same' as const,
+        ...SUMMARY_STYLES.budget,
+      },
+      {
+        label: 'SESSIONS ATTENDED',
+        value: String(stats?.confirmed ?? 0),
+        note: `${stats?.thisMonth ?? 0} this month`,
+        noteIcon: 'trend' as const,
+        ...SUMMARY_STYLES.sessions,
+      },
+      {
+        label: 'SAVINGS',
+        value: inr(wellness?.savings ?? 0),
+        note: wellness ? `${wellness.savingsRate}% savings rate` : 'This month',
+        noteIcon: 'trend' as const,
+        ...SUMMARY_STYLES.savings,
+      },
+    ];
+  }, [wellness, budgets, stats]);
+
+  const goalRows: GoalRow[] = goals.slice(0, 6).map((g) => ({
+    name: g.title,
+    target: `₹${inr(g.targetAmount)}`,
+    saved: `₹${inr(g.savedAmount)}`,
+    deadline: fmtDate(g.goalDate),
+    progress: g.targetAmount > 0 ? (g.savedAmount / g.targetAmount) * 100 : 0,
+  }));
+
+  const goalStats = useMemo(() => {
+    const total = goals.length;
+    const completed = goals.filter((g) => g.isAchieved || g.savedAmount >= g.targetAmount).length;
+    const upcoming = goals.filter((g) => g.savedAmount === 0).length;
+    const pending = total - completed - upcoming;
+    return {
+      total,
+      completed,
+      pending: Math.max(0, pending),
+      upcoming,
+      percent: total ? (completed / total) * 100 : 0,
+    };
+  }, [goals]);
+
+  const budgetRows = budgets.slice(0, 3).map((b) => ({
+    name: b.title,
+    tasks: (b.categories ?? []).filter((c) => !c.parentCategoryId).length,
+    progress: budgetProgress[b.id]?.percentageSpent ?? 0,
+  }));
+
+  const catData = (analytics?.topCategories ?? []).slice(0, 6).map((c) => ({ name: c.name, value: Math.round(c.amount) }));
+  const day = fmtDay(latest?.slot?.startTime);
 
   return (
-    <Layout title="Dashboard">
-      <div className="space-y-8 max-w-7xl mx-auto p-4 md:p-8">
-        {/* Welcome Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-[var(--color-text-primary)] font-heading">
-              Welcome{stats && stats.total > 0 ? ' back' : ''}, {user?.name?.split(' ')[0] || 'there'}! 👋
-            </h1>
-            <p className="text-[var(--color-text-secondary)] mt-1">
-              Your coaching sessions and financial wellness, all in one place.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => navigate('/profile')}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-(--color-primary)/10 text-(--color-primary) font-semibold border border-(--color-primary)/20 hover:bg-(--color-primary)/20 transition-colors text-sm"
-          >
-            <Users className="w-4 h-4" />
-            <span>View Profile</span>
-          </button>
-        </div>
+    <Layout title="Overview">
+      <div className="flex flex-col gap-6 pb-8">
+        <motion.div {...fadeUp}>
+          <SummarySection tiles={summaryTiles} loading={wellnessRes.loading} />
+        </motion.div>
 
-        {/* First-run activation checklist */}
-        <GetStartedCard />
+        <motion.div {...fadeUp} transition={{ delay: 0.05 }}>
+          <UpcomingSessionCard
+            loading={latestRes.loading}
+            hasSession={!!latest}
+            month={day.month}
+            day={day.day}
+            name={latest?.coach?.fullName ?? 'No upcoming session'}
+            role={latest?.coach?.expertise?.[0] ?? 'Book a coaching session'}
+            weekday={day.weekday}
+            time={fmtTimeRange(latest?.slot?.startTime, latest?.slot?.endTime)}
+            status={latest ? 'Confirmed' : 'None'}
+            onReschedule={() => navigate('/sessions')}
+            onDetails={() => latest && setDetailsFor(latest)}
+            onJoin={() => (latest?.meetingLink ? window.open(latest.meetingLink, '_blank') : navigate('/coaches'))}
+          />
+        </motion.div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard title="Total Sessions" value={stats?.total || 0} icon={Calendar} description="Sessions booked" />
-          <StatCard title="Hours Spent" value={Math.round((stats?.minutesBooked || 0) / 60)} icon={Clock} description="Total coaching hours" />
-          <StatCard title="Completed" value={stats?.confirmed || 0} icon={CheckCircle} description="Sessions attended" />
-          <StatCard title={milestone.title} value={milestone.value} icon={Rocket} description={milestone.description} />
-        </div>
+        <motion.div {...fadeUp} transition={{ delay: 0.1 }} className="flex flex-col gap-6 lg:flex-row">
+          <IncomeExpenseChart
+            loading={trendsRes.loading}
+            data={trends}
+            subLeft={trends.length ? `₹${inr(trends[trends.length - 1].Income)} in` : undefined}
+            subRight={trends.length ? `₹${inr(trends[trends.length - 1].Expense)} out` : undefined}
+          />
+          <SpendsByCategoryCard
+            loading={analyticsRes.loading}
+            data={catData}
+            subCatCount={catData.length}
+            onViewAll={() => navigate('/finance/spent-by-category')}
+          />
+        </motion.div>
 
-        {/* Latest Session Section */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-[var(--color-text-primary)] font-heading flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-[var(--color-primary)]" />
-              Your Next Session
-            </h2>
-            <button
-              onClick={() => navigate('/sessions')}
-              className="text-sm font-semibold text-[var(--color-primary)] hover:underline"
-            >
-              View all sessions
-            </button>
-          </div>
+        <motion.div {...fadeUp} transition={{ delay: 0.15 }} className="flex flex-col gap-6 lg:flex-row">
+          <GoalsCompletionCard {...goalStats} loading={goalsRes.loading} />
+          <FinancialGoalsTable loading={goalsRes.loading} rows={goalRows} onViewAll={() => navigate('/finance/goals')} />
+        </motion.div>
 
-          {latestSession ? (
-            <YourSessionCard session={latestSession} />
-          ) : (
-            <div className="bg-[var(--color-bg-card)] p-12 rounded-2xl border border-dashed border-[var(--color-border-primary)] text-center">
-              <div className="w-16 h-16 bg-[var(--color-bg-tertiary)] rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-[var(--color-text-tertiary)]" />
-              </div>
-              <h3 className="text-lg font-bold text-[var(--color-text-primary)] font-heading">No upcoming sessions</h3>
-              <p className="text-[var(--color-text-secondary)] mt-1 mb-6">Connect with an expert coach to start your journey.</p>
-              <button
-                onClick={() => navigate('/coaches')}
-                className="bg-[var(--color-primary)] text-white px-6 py-2.5 rounded-xl font-bold shadow-lg hover:opacity-90 transition-all"
-              >
-                Browse Coaches
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Context banner */}
-        {banner && !bannerDismissed && (
-          <div className="bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] p-8 rounded-2xl text-white shadow-xl relative overflow-hidden group">
-            <button
-              aria-label="Dismiss"
-              onClick={() => {
-                localStorage.setItem(BANNER_DISMISS_KEY, String(Date.now()));
-                setBannerDismissed(true);
-              }}
-              className="absolute top-3 right-3 z-20 p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="max-w-xl">
-                <h2 className="text-2xl font-bold mb-2 font-heading">{banner.title}</h2>
-                <p className="text-white/80">{banner.body}</p>
-              </div>
-              <button
-                onClick={() => navigate(banner.to)}
-                className="bg-white text-[var(--color-primary)] px-8 py-3 rounded-xl font-bold shadow-lg hover:scale-105 transition-all whitespace-nowrap"
-              >
-                {banner.cta}
-              </button>
-            </div>
-            <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-64 h-64 bg-white/10 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-700"></div>
-            <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-48 h-48 bg-white/10 rounded-full blur-2xl group-hover:scale-110 transition-transform duration-700"></div>
-          </div>
-        )}
+        <motion.div {...fadeUp} transition={{ delay: 0.2 }} className="flex flex-col gap-6 lg:flex-row">
+          <BudgetsWidget
+            loading={budgetsRes.loading}
+            rows={budgetRows}
+            onViewAll={() => navigate('/finance/budgets')}
+          />
+          <DuesReminderCard onViewAll={() => navigate('/finance/dues-reminders')} />
+        </motion.div>
       </div>
 
       <SessionDetailsModal
-        isOpen={!!feedbackFor}
-        session={feedbackFor}
-        onClose={() => setFeedbackFor(null)}
-        onFeedbackSubmitted={() => setFeedbackFor(null)}
+        isOpen={!!detailsFor}
+        session={detailsFor}
+        onClose={() => setDetailsFor(null)}
+        onFeedbackSubmitted={() => setDetailsFor(null)}
       />
     </Layout>
   );

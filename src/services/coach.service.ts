@@ -1,6 +1,11 @@
 import { axiosInstance } from './api';
 import type { Coach, Slot, Consultation, ConsultationStats } from '../types/booking.types';
 
+export interface CoachAvailabilitySummary {
+  nextSlot: { startTime: string; endTime: string } | null;
+  days: string[]; // YYYY-MM-DD in IST
+}
+
 export const coachService = {
   getCoaches: async (): Promise<Coach[]> => {
     const response = await axiosInstance.get('/employee/coaches');
@@ -26,6 +31,19 @@ export const coachService = {
       params: { startDate, endDate, coachId },
     });
     return response.data;
+  },
+
+  /**
+   * Per-coach availability summary for the coach-list cards: next open slot +
+   * the distinct days (IST, YYYY-MM-DD) with any open slot in the window.
+   */
+  getAvailabilitySummary: async (
+    days = 7,
+  ): Promise<Record<string, CoachAvailabilitySummary>> => {
+    const response = await axiosInstance.get('/employee/coaches/availability-summary', {
+      params: { days },
+    });
+    return response.data ?? {};
   },
 
   bookConsultation: async (coachId: string, slotStart: string, slotEnd: string, notes?: string) => {

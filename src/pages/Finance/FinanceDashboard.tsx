@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Layout } from '../../components/common/Layout';
+import { useAsync } from '../../hooks/useAsync';
+import { Skeleton } from '../../components/common/Skeleton';
 import { ScoreRing } from '../../components/finance/ScoreRing';
 import { InsightCard } from '../../components/finance/InsightCard';
 import { TransactionItem } from '../../components/finance/TransactionItem';
@@ -15,7 +17,7 @@ import {
   getTransactions, getAnalyticsOverview, getSpendingTrends,
   getConsent, generateInsights, calculateScore, getGoals,
 } from '../../services/finance.service';
-import type { WellnessOverview, FinancialScore, FinancialInsight, Transaction, AnalyticsOverview, FinancialGoal } from '../../types/finance.types';
+import type { WellnessOverview, FinancialScore, FinancialInsight, Transaction, AnalyticsOverview, FinancialGoal, MonthlyTrend } from '../../types/finance.types';
 import { CATEGORY_COLORS } from '../../components/finance/TransactionItem';
 
 const fadeUp = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 } };
@@ -28,58 +30,48 @@ function formatINR(n: number): string {
 
 export default function FinanceDashboard() {
   const navigate = useNavigate();
-  const [overview, setOverview] = useState<WellnessOverview | null>(null);
-  const [score, setScore] = useState<FinancialScore | null>(null);
-  const [insights, setInsights] = useState<FinancialInsight[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
-  const [trends, setTrends] = useState<{ period: string; totalIncome: number; totalExpense: number }[]>([]);
-  const [goals, setGoals] = useState<FinancialGoal[]>([]);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadData = useCallback(async () => {
-    try {
-      const consent = await getConsent();
-      if (!consent.hasConsented) {
-        navigate('/finance/consent');
-        return;
-      }
-
-      const [ov, sc, ins, txns, anal, tr, gl] = await Promise.allSettled([
-        getWellnessOverview(),
-        getLatestScore(),
-        getSmartInsights(5),
-        getTransactions({ page: 1, limit: 8 }),
-        getAnalyticsOverview(),
-        getSpendingTrends(6),
-        getGoals(),
-      ]);
-
-      if (ov.status === 'fulfilled') setOverview(ov.value);
-      if (sc.status === 'fulfilled') setScore(sc.value);
-      if (ins.status === 'fulfilled') setInsights(ins.value);
-      if (txns.status === 'fulfilled') setTransactions(txns.value.transactions);
-      if (anal.status === 'fulfilled') setAnalytics(anal.value);
-      if (tr.status === 'fulfilled') setTrends((tr.value as any).trends ?? []);
-      if (gl.status === 'fulfilled') setGoals(gl.value);
-    } catch {
-      // Non-blocking - some data may still be available
-    } finally {
-      setLoading(false);
+  // Consent is the one gate; everything else loads on its own timeline so each
+  // card shows its own skeleton and fast endpoints don't wait on slow ones.
+  const consentRes = useAsync(() => getConsent(), []);
+  useEffect(() => {
+    if (consentRes.data && !consentRes.data.hasConsented) {
+      navigate('/finance/consent');
     }
-  }, [navigate]);
+  }, [consentRes.data, navigate]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  const overviewRes = useAsync(() => getWellnessOverview(), []);
+  const scoreRes = useAsync(() => getLatestScore(), []);
+  const insightsRes = useAsync(() => getSmartInsights(5), []);
+  const txnsRes = useAsync(() => getTransactions({ page: 1, limit: 8 }), []);
+  const analyticsRes = useAsync(() => getAnalyticsOverview(), []);
+  const trendsRes = useAsync(() => getSpendingTrends(6), []);
+  const goalsRes = useAsync(() => getGoals(), []);
+
+  const overview: WellnessOverview | null = overviewRes.data ?? null;
+  const score: FinancialScore | null = scoreRes.data ?? null;
+  const transactions: Transaction[] = txnsRes.data?.transactions ?? [];
+  const analytics: AnalyticsOverview | null = analyticsRes.data ?? null;
+  const trends: MonthlyTrend[] = trendsRes.data?.trends ?? [];
+  const goals: FinancialGoal[] = goalsRes.data ?? [];
+
+  // "Mark read" overlays locally without refetching the list.
+  const [readInsightIds, setReadInsightIds] = useState<Set<string>>(new Set());
+  const insights: FinancialInsight[] = (insightsRes.data ?? []).map((i) =>
+    readInsightIds.has(i.id) ? { ...i, isRead: true } : i,
+  );
 
   const handleRefresh = async () => {
     setRefreshing(true);
     await Promise.allSettled([generateInsights(), calculateScore()]);
-    await loadData();
+    // Each widget re-fetches independently and shows its own skeleton meanwhile.
+    [overviewRes, scoreRes, insightsRes, txnsRes, analyticsRes, trendsRes, goalsRes]
+      .forEach((r) => r.reload());
     setRefreshing(false);
   };
 
-  if (loading) {
+  if (consentRes.loading) {
     return (
       <Layout title="Financial Wellness">
         <div className="flex items-center justify-center h-64">
@@ -132,7 +124,11 @@ export default function FinanceDashboard() {
             onClick={() => navigate('/finance/score')}
           >
             <p className="text-xs font-bold text-[var(--color-text-tertiary)] uppercase tracking-wider">Wellness Score</p>
-            <ScoreRing score={score?.score ?? 0} size={120} />
+            {scoreRes.loading ? (
+              <Skeleton className="h-[120px] w-[120px] rounded-full" />
+            ) : (
+              <ScoreRing score={score?.score ?? 0} size={120} />
+            )}
             <div className="text-center">
               <p className="text-xs text-[var(--color-text-secondary)]">Tap to view breakdown</p>
             </div>
@@ -140,7 +136,11 @@ export default function FinanceDashboard() {
 
           {/* Stats Grid */}
           <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {[
+            {overviewRes.loading
+              ? Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-[104px] rounded-2xl" />
+                ))
+              : [
               {
                 label: 'Monthly Income',
                 value: formatINR(overview?.monthlyIncome ?? 0),
@@ -226,7 +226,9 @@ export default function FinanceDashboard() {
                 View all <ChevronRight className="w-3 h-3" />
               </button>
             </div>
-            {trendData.length > 0 ? (
+            {trendsRes.loading ? (
+              <Skeleton className="h-48 w-full" />
+            ) : trendData.length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={trendData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
                   <defs>
@@ -273,7 +275,9 @@ export default function FinanceDashboard() {
                 Details <ChevronRight className="w-3 h-3" />
               </button>
             </div>
-            {pieData.length > 0 ? (
+            {analyticsRes.loading ? (
+              <Skeleton className="h-48 w-full" />
+            ) : pieData.length > 0 ? (
               <div className="flex items-center gap-4">
                 <ResponsiveContainer width={150} height={150}>
                   <PieChart>
@@ -330,7 +334,9 @@ export default function FinanceDashboard() {
               {goals.length > 0 ? 'View all' : 'Set goals'} <ChevronRight className="w-3 h-3" />
             </button>
           </div>
-          {goals.length > 0 ? (() => {
+          {goalsRes.loading ? (
+            <Skeleton className="h-28 w-full" />
+          ) : goals.length > 0 ? (() => {
             const totalTarget = goals.reduce((s, g) => s + g.targetAmount, 0);
             const totalSaved = goals.reduce((s, g) => s + g.savedAmount, 0);
             const completed = goals.filter((g) => g.savedAmount >= g.targetAmount).length;
@@ -394,14 +400,20 @@ export default function FinanceDashboard() {
                 View all <ChevronRight className="w-3 h-3" />
               </button>
             </div>
-            {insights.length > 0 ? (
+            {insightsRes.loading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-16 w-full" />
+                ))}
+              </div>
+            ) : insights.length > 0 ? (
               <div className="space-y-3">
                 {insights.slice(0, 4).map((ins) => (
                   <InsightCard
                     key={ins.id}
                     insight={ins}
                     compact
-                    onRead={() => setInsights((prev) => prev.map((i) => i.id === ins.id ? { ...i, isRead: true } : i))}
+                    onRead={() => setReadInsightIds((prev) => new Set(prev).add(ins.id))}
                   />
                 ))}
               </div>
@@ -431,7 +443,13 @@ export default function FinanceDashboard() {
                 View all <ChevronRight className="w-3 h-3" />
               </button>
             </div>
-            {transactions.length > 0 ? (
+            {txnsRes.loading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            ) : transactions.length > 0 ? (
               <div className="divide-y divide-[var(--color-border-primary)]">
                 {transactions.slice(0, 6).map((txn) => (
                   <TransactionItem key={txn.id} transaction={txn} />

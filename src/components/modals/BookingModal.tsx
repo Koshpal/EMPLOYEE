@@ -146,9 +146,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
     const days = [];
     // Padding for start of month
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`pad-${i}`} className="h-10" />);
+      days.push(<div key={`pad-${i}`} className="aspect-square" />);
     }
-    
+
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day);
       const dateStr = formatDateLocal(date);
@@ -161,9 +161,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
           key={day}
           disabled={!hasSlots || isPast}
           onClick={() => setSelectedDate(date)}
-          className={`h-10 w-10 flex items-center justify-center rounded-xl text-sm transition-all
-            ${isSelected ? 'bg-[var(--color-primary)] text-white font-bold' : 
-              hasSlots && !isPast ? 'hover:bg-[var(--color-primary)]/10 text-[var(--color-text-primary)] font-semibold' : 
+          className={`aspect-square w-full flex items-center justify-center rounded-xl text-sm transition-all
+            ${isSelected ? 'bg-[var(--color-primary)] text-white font-bold' :
+              hasSlots && !isPast ? 'hover:bg-[var(--color-primary)]/10 text-[var(--color-text-primary)] font-semibold' :
               'text-[var(--color-text-tertiary)] opacity-30 cursor-not-allowed'}`}
         >
           {day}
@@ -175,43 +175,109 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
 
   if (!isOpen || !coach) return null;
 
+  const steps = ['Date', 'Time', 'Review'] as const;
+  const activeStep = currentStep === 1 ? (selectedSlot ? 1 : 0) : currentStep === 2 ? 2 : 3;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in" onClick={onClose}>
-      <div className="bg-[var(--color-bg-card)] w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-slide-up" onClick={e => e.stopPropagation()}>
-        {/* Header */}
-        <div className="p-6 border-b border-[var(--color-border-primary)] flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-[var(--color-text-primary)] font-heading">
-              {currentStep === 3 ? 'Booking Confirmed' : 'Schedule Session'}
-            </h2>
-            <p className="text-sm text-[var(--color-text-secondary)]">
-              {currentStep === 1 ? 'Select a date and time for your session' : 
-               currentStep === 2 ? 'Review your booking details' : 
-               'Your session has been successfully scheduled'}
-            </p>
-          </div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-[var(--color-bg-tertiary)] transition-colors">
-            <X className="w-6 h-6" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md animate-fade-in" onClick={onClose}>
+      <div className="w-full max-w-4xl overflow-hidden rounded-[12px] border border-[var(--color-border-primary)] bg-[var(--color-bg-card)] shadow-2xl animate-slide-up" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-[var(--color-border-primary)] p-4">
+          <h2 className="font-heading text-[24px] font-semibold leading-[44px] text-[var(--color-black-mid)]">
+            {currentStep === 3 ? 'Session Booked' : 'Session Booking'}
+          </h2>
+          <button onClick={onClose} className="rounded-[8px] p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)]">
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-6 max-h-[70vh] overflow-y-auto">
+        <div className="max-h-[75vh] overflow-y-auto p-8">
+          {currentStep < 3 && (
+            <div className="flex flex-col gap-6 lg:flex-row">
+              {/* Left — coach summary + step rail */}
+              <div className="flex w-full flex-col gap-6 lg:w-[264px] lg:shrink-0">
+                <div className="flex items-start gap-3">
+                  {coach.profilePhoto ? (
+                    <img src={coach.profilePhoto} alt={coach.fullName} className="h-14 w-14 shrink-0 rounded-full object-cover" />
+                  ) : (
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-lightest)] text-lg font-bold text-[var(--color-primary)]">
+                      {coach.fullName.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="flex min-w-0 flex-1 flex-col gap-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-heading text-[16px] font-semibold leading-6 text-black">{coach.fullName}</p>
+                        <p className="truncate text-[13px] leading-5 text-[var(--color-grey-darkest)]">
+                          {coach.expertise.slice(0, 2).join(' · ') || 'Certified Financial Coach'}
+                        </p>
+                      </div>
+                      <span className="flex shrink-0 items-center gap-1 rounded-[52px] bg-[var(--color-bg-tertiary)] px-2 py-0.5">
+                        <span className="text-[13px] leading-5 text-[var(--color-black-light)]">
+                          {coach.rating > 0 ? coach.rating.toFixed(1) : '—'}
+                        </span>
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {coach.expertise.slice(0, 3).map((e) => (
+                        <span key={e} className="rounded-[20px] bg-[var(--color-secondary-lightest)] px-2 py-0.5 text-[11px] leading-5 text-[var(--color-secondary-mid)]">{e}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <ol className="flex flex-col gap-2">
+                  {steps.map((label, i) => {
+                    const done = activeStep > i;
+                    const current = activeStep === i;
+                    return (
+                      <li key={label} className="flex items-center gap-2">
+                        <span
+                          className={`flex h-[34px] w-[34px] items-center justify-center rounded-full border text-xs font-bold ${
+                            done
+                              ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white'
+                              : current
+                                ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
+                                : 'border-[var(--color-border-primary)] text-[var(--color-text-tertiary)]'
+                          }`}
+                        >
+                          {done ? <Check className="h-4 w-4" /> : i + 1}
+                        </span>
+                        <span className={`text-[14px] ${current || done ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-grey-mid)]'}`}>
+                          {label}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
+
+              <span className="hidden w-px self-stretch bg-[var(--color-border-primary)] lg:block" />
+
+              {/* Right — step body */}
+              <div className="flex min-w-0 flex-1 flex-col gap-6">
           {currentStep === 1 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Calendar Column */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-[var(--color-text-primary)]">Select Date</h3>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))} className="p-1 hover:bg-[var(--color-bg-tertiary)] rounded-lg">
-                      <ChevronLeft className="w-5 h-5" />
+                <div className="flex min-w-0 items-center justify-between gap-2">
+                  <h3 className="shrink-0 font-heading text-[16px] font-semibold text-[var(--color-text-primary)]">Select Date</h3>
+                  <div className="flex shrink-0 items-center gap-0.5">
+                    <button
+                      aria-label="Previous month"
+                      onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
+                      className="rounded-lg p-1 hover:bg-[var(--color-bg-tertiary)]"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
                     </button>
-                    <span className="text-sm font-bold w-32 text-center">
-                      {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                    <span className="whitespace-nowrap text-center text-[12px] font-semibold text-[var(--color-text-primary)]">
+                      {currentMonth.toLocaleString('en-US', { month: 'short', year: 'numeric' })}
                     </span>
-                    <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))} className="p-1 hover:bg-[var(--color-bg-tertiary)] rounded-lg">
-                      <ChevronRight className="w-5 h-5" />
+                    <button
+                      aria-label="Next month"
+                      onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
+                      className="rounded-lg p-1 hover:bg-[var(--color-bg-tertiary)]"
+                    >
+                      <ChevronRight className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
@@ -235,7 +301,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
 
               {/* Slots Column */}
               <div className="space-y-4">
-                <h3 className="font-bold text-[var(--color-text-primary)]">Select Time (IST)</h3>
+                <h3 className="font-heading text-[16px] font-semibold text-[var(--color-text-primary)]">Select Time (IST)</h3>
                 <div className="space-y-2 h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                   {loadingSlots ? (
                     <div className="flex flex-col items-center justify-center h-full text-[var(--color-text-secondary)]">
@@ -334,6 +400,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
               )}
             </div>
           )}
+              </div>
+            </div>
+          )}
 
           {currentStep === 3 && (
             <div className="py-8 text-center space-y-6">
@@ -355,31 +424,31 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
 
         {/* Footer */}
         {currentStep < 3 && (
-          <div className="p-6 border-t border-[var(--color-border-primary)] flex items-center gap-4">
+          <div className="flex items-center gap-4 border-t border-[var(--color-border-primary)] p-4">
+            <button
+              onClick={() => (currentStep === 1 ? onClose() : (setCurrentStep(1), setBookingError(null)))}
+              className="flex h-14 flex-1 items-center justify-center rounded-[8px] border border-[var(--color-border-primary)] text-[16px] leading-7 text-[var(--color-black-light)] hover:bg-[var(--color-bg-tertiary)]"
+            >
+              {currentStep === 1 ? 'Cancel' : 'Back'}
+            </button>
             {currentStep === 1 ? (
-              <Button variant="secondary" className="flex-1" onClick={onClose}>Cancel</Button>
-            ) : (
-              <Button variant="secondary" className="flex-1" onClick={() => { setCurrentStep(1); setBookingError(null); }}>Back</Button>
-            )}
-
-            {currentStep === 1 ? (
-              <Button 
-                variant="primary" 
-                className="flex-[2]" 
-                disabled={!selectedSlot} 
+              <button
+                disabled={!selectedSlot}
                 onClick={() => setCurrentStep(2)}
+                className="flex h-14 flex-[2] items-center justify-center gap-2 rounded-[8px] bg-[var(--color-primary)] pl-6 pr-4 text-[16px] leading-7 text-white transition-colors hover:bg-[var(--color-primary-darkest)] disabled:bg-[var(--color-primary-light)] disabled:text-white/70"
               >
-                Next Step
-              </Button>
+                Next
+                <ChevronRight className="h-6 w-6" />
+              </button>
             ) : (
-              <Button 
-                variant="primary" 
-                className="flex-[2]" 
-                loading={bookingLoading} 
+              <button
                 onClick={handleBook}
+                disabled={bookingLoading}
+                className="flex h-14 flex-[2] items-center justify-center gap-2 rounded-[8px] bg-[var(--color-primary)] px-6 text-[16px] leading-7 text-white transition-colors hover:bg-[var(--color-primary-darkest)] disabled:opacity-60"
               >
+                {bookingLoading && <Loader2 className="h-5 w-5 animate-spin" />}
                 Confirm Booking
-              </Button>
+              </button>
             )}
           </div>
         )}

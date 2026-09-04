@@ -1,166 +1,172 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../../components/common/Layout';
-import { ConsultationCard } from '../../components/cards/ConsultationCard';
+import { SessionRow } from '../../components/cards/SessionRow';
 import { SessionDetailsModal } from '../../components/modals/SessionDetailsModal';
 import { coachService } from '../../services/coach.service';
 import type { Consultation } from '../../types/booking.types';
-import { Calendar, Clock, Search } from 'lucide-react';
+import { IconBell, IconSettings2, IconAngleDown, IconPlus } from '../../components/icons/figma';
+
+type Tab = 'upcoming' | 'past' | 'cancelled';
+
+const iconBtn =
+  'flex h-10 items-center justify-center rounded-[8px] border border-[var(--color-border-primary)] px-2.5 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)] transition-colors';
+
+function isToday(iso: string) {
+  const d = new Date(iso);
+  const n = new Date();
+  return d.toDateString() === n.toDateString();
+}
+function withinDays(iso: string, days: number) {
+  const diff = new Date(iso).getTime() - Date.now();
+  return diff >= 0 && diff <= days * 864e5;
+}
 
 const Sessions: React.FC = () => {
   const navigate = useNavigate();
   const [sessions, setSessions] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
-  const [selectedSession, setSelectedSession] = useState<Consultation | null>(null);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-
-  useEffect(() => {
-    fetchSessions();
-  }, []);
+  const [tab, setTab] = useState<Tab>('upcoming');
+  const [selected, setSelected] = useState<Consultation | null>(null);
 
   const fetchSessions = async () => {
     setLoading(true);
     try {
       const data = await coachService.getMyConsultations();
-      // Sort sessions by date
-      const sorted = data.sort((a, b) =>
-        new Date(b.slot.startTime).getTime() - new Date(a.slot.startTime).getTime()
+      setSessions(
+        data.sort((a, b) => new Date(a.slot.startTime).getTime() - new Date(b.slot.startTime).getTime()),
       );
-      setSessions(sorted);
     } catch (error) {
       console.error('Error fetching sessions:', error);
     } finally {
       setLoading(false);
     }
   };
+  useEffect(() => { fetchSessions(); }, []);
 
-  const now = new Date();
-  const upcomingSessions = sessions.filter(s => new Date(s.slot.startTime) >= now && s.status !== 'CANCELLED');
-  const pastSessions = sessions.filter(s => new Date(s.slot.startTime) < now || s.status === 'CANCELLED');
+  const buckets = useMemo(() => {
+    const now = Date.now();
+    const upcoming = sessions.filter((s) => new Date(s.slot.startTime).getTime() >= now && s.status !== 'CANCELLED');
+    const past = sessions.filter((s) => new Date(s.slot.startTime).getTime() < now && s.status !== 'CANCELLED');
+    const cancelled = sessions.filter((s) => s.status === 'CANCELLED');
+    return { upcoming, past: [...past].reverse(), cancelled };
+  }, [sessions]);
 
-  const filterBySearch = (list: typeof sessions) => {
-    if (!searchTerm.trim()) return list;
-    const lower = searchTerm.toLowerCase();
-    return list.filter(s =>
-      s.coach?.fullName?.toLowerCase().includes(lower) ||
-      s.slot?.startTime?.toLowerCase().includes(lower) ||
-      s.status?.toLowerCase().includes(lower)
-    );
-  };
+  const list = buckets[tab];
 
-  const displayedSessions = filterBySearch(activeTab === 'upcoming' ? upcomingSessions : pastSessions);
+  // group the upcoming tab by Today / This Week / Later
+  const groups: { label: string; items: Consultation[] }[] = useMemo(() => {
+    if (tab !== 'upcoming') return [{ label: '', items: list }];
+    const today = list.filter((s) => isToday(s.slot.startTime));
+    const week = list.filter((s) => !isToday(s.slot.startTime) && withinDays(s.slot.startTime, 7));
+    const later = list.filter((s) => !isToday(s.slot.startTime) && !withinDays(s.slot.startTime, 7));
+    return [
+      { label: 'Today', items: today },
+      { label: 'Next Week', items: week },
+      { label: 'Later', items: later },
+    ].filter((g) => g.items.length);
+  }, [tab, list]);
 
-  const handleViewDetails = (sessionId: string) => {
-    const session = sessions.find(s => s.id === sessionId);
-    if (session) {
-      setSelectedSession(session);
-      setShowDetailsModal(true);
-    }
-  };
+  const headerActions = (
+    <>
+      <button className={iconBtn} aria-label="Notifications"><IconBell size={20} /></button>
+      <button className={iconBtn} aria-label="Settings"><IconSettings2 size={20} /></button>
+    </>
+  );
+
+  const tabs: { id: Tab; label: string }[] = [
+    { id: 'upcoming', label: 'Upcoming' },
+    { id: 'past', label: 'Past' },
+    { id: 'cancelled', label: 'Cancelled' },
+  ];
+
+  const headerBelow = (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center rounded-[6px] bg-[var(--color-white-mid)] px-3 py-2">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`w-[130px] rounded-[6px] px-6 py-2.5 text-[16px] leading-5 transition-colors ${
+              tab === t.id
+                ? 'bg-[var(--color-bg-card)] text-black shadow-[var(--shadow-drop-low)]'
+                : 'text-[var(--color-grey-darkest)]'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <div className="flex items-center gap-3">
+        <button className="flex w-[108px] items-center justify-center gap-1 rounded-[8px] border border-[var(--color-border-primary)] bg-[var(--color-bg-tertiary)] px-2.5 py-3.5 text-[14px] font-medium leading-5 text-black">
+          {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          <IconAngleDown size={16} />
+        </button>
+        <button
+          onClick={() => navigate('/coaches')}
+          className="flex h-12 items-center gap-1.5 rounded-[8px] bg-[var(--color-primary)] pl-3 pr-6 text-[16px] leading-7 text-white transition-colors hover:bg-[var(--color-primary-darkest)]"
+        >
+          <IconPlus size={24} />
+          New Session
+        </button>
+      </div>
+    </div>
+  );
 
   return (
-    <Layout title="My Sessions">
-      <div className="space-y-8 max-w-5xl mx-auto">
-        {/* Header section with Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 bg-[var(--color-bg-card)] p-8 rounded-3xl border border-[var(--color-border-primary)] shadow-sm">
-            <h1 className="text-3xl font-bold text-[var(--color-text-primary)] font-heading mb-2">Your Coaching Journey 🚀</h1>
-            <p className="text-[var(--color-text-secondary)]">Manage your upcoming sessions and review notes from past conversations with your expert coaches.</p>
-          </div>
-          <div className="bg-[var(--color-primary)] p-8 rounded-3xl text-white shadow-lg flex flex-col justify-center">
-            <p className="text-white/70 text-sm font-bold uppercase tracking-wider mb-1">Total Sessions</p>
-            <p className="text-4xl font-bold font-heading">{sessions.length}</p>
-          </div>
+    <Layout title="Sessions" headerActions={headerActions} headerBelow={headerBelow}>
+      {loading ? (
+        <div className="flex flex-col gap-4">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-[106px] animate-pulse rounded-[12px] border border-[var(--color-border-primary)] bg-[var(--color-bg-card)]" />
+          ))}
         </div>
-
-        {/* Tabs and Controls */}
-        <div className="flex flex-col md:flex-row gap-6 items-center justify-between border-b border-[var(--color-border-primary)] pb-4">
-          <div className="flex p-1 bg-[var(--color-bg-tertiary)] rounded-2xl w-full md:w-auto">
+      ) : list.length === 0 ? (
+        <div className="rounded-[12px] border border-dashed border-[var(--color-border-primary)] bg-[var(--color-bg-card)] py-20 text-center">
+          <h3 className="font-heading text-[18px] font-semibold text-[var(--color-text-primary)]">
+            {tab === 'upcoming' ? 'No upcoming sessions' : tab === 'past' ? 'No past sessions' : 'No cancelled sessions'}
+          </h3>
+          <p className="mt-2 text-body-sm text-[var(--color-text-secondary)]">
+            {tab === 'upcoming' ? 'Book a session with a coach to get started.' : 'Nothing to show here yet.'}
+          </p>
+          {tab === 'upcoming' && (
             <button
-              onClick={() => setActiveTab('upcoming')}
-              className={`flex-1 md:flex-none px-8 py-3 rounded-xl text-sm font-bold transition-all ${
-                activeTab === 'upcoming'
-                  ? 'bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-sm'
-                  : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-              }`}
+              onClick={() => navigate('/coaches')}
+              className="mt-6 rounded-[8px] bg-[var(--color-primary)] px-6 py-2.5 text-[16px] text-white hover:bg-[var(--color-primary-darkest)]"
             >
-              Upcoming ({upcomingSessions.length})
+              Book a session
             </button>
-            <button
-              onClick={() => setActiveTab('past')}
-              className={`flex-1 md:flex-none px-8 py-3 rounded-xl text-sm font-bold transition-all ${
-                activeTab === 'past'
-                  ? 'bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-sm'
-                  : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-              }`}
-            >
-              Past & Cancelled ({pastSessions.length})
-            </button>
-          </div>
-
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="relative flex-1 md:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
-              <input
-                type="text"
-                placeholder="Search by coach name or status..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-card)] text-sm outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-              />
-            </div>
-          </div>
+          )}
         </div>
-
-        {/* Sessions List */}
-        {loading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-32 rounded-2xl bg-[var(--color-bg-tertiary)] animate-pulse" />
-            ))}
-          </div>
-        ) : displayedSessions.length > 0 ? (
-          <div className="space-y-4">
-            {displayedSessions.map(session => (
-              <ConsultationCard
-                key={session.id}
-                consultation={session}
-                onViewDetails={handleViewDetails}
-                onBookAgain={(coachId) => navigate(`/coaches?coach=${coachId}`)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-20 bg-[var(--color-bg-card)] rounded-3xl border border-dashed border-[var(--color-border-primary)]">
-            <div className="w-20 h-20 bg-[var(--color-bg-tertiary)] rounded-full flex items-center justify-center mx-auto mb-4 text-[var(--color-text-tertiary)]">
-              {activeTab === 'upcoming' ? <Calendar className="w-10 h-10" /> : <Clock className="w-10 h-10" />}
+      ) : (
+        <div className="flex flex-col gap-8">
+          {groups.map((g) => (
+            <div key={g.label || 'all'} className="flex flex-col gap-4">
+              {g.label && (
+                <h2 className="font-heading text-[24px] font-semibold leading-9 text-[var(--color-black-mid)]">
+                  {g.label}
+                </h2>
+              )}
+              {g.items.map((s) => (
+                <SessionRow
+                  key={s.id}
+                  session={s}
+                  showJoin={tab === 'upcoming' && isToday(s.slot.startTime)}
+                  onReschedule={() => navigate('/sessions')}
+                  onCancel={tab === 'upcoming' ? () => setSelected(s) : undefined}
+                  onDetails={() => setSelected(s)}
+                  onJoin={() => (s.meetingLink ? window.open(s.meetingLink, '_blank') : setSelected(s))}
+                />
+              ))}
             </div>
-            <h2 className="text-2xl font-bold text-[var(--color-text-primary)] font-heading">
-              {activeTab === 'upcoming' ? 'No upcoming sessions' : 'No past sessions found'}
-            </h2>
-            <p className="text-[var(--color-text-secondary)] mt-2">
-              {activeTab === 'upcoming' 
-                ? 'Your scheduled sessions will appear here. Ready to grow?' 
-                : 'Your session history will appear here once you complete your first session.'}
-            </p>
-            {activeTab === 'upcoming' && (
-              <button 
-                onClick={() => navigate('/coaches')}
-                className="mt-6 bg-[var(--color-primary)] text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:opacity-90"
-              >
-                Book Your First Session
-              </button>
-            )}
-          </div>
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
       <SessionDetailsModal
-        isOpen={showDetailsModal}
-        session={selectedSession}
-        onClose={() => setShowDetailsModal(false)}
+        isOpen={!!selected}
+        session={selected}
+        onClose={() => setSelected(null)}
         onFeedbackSubmitted={fetchSessions}
       />
     </Layout>

@@ -8,26 +8,51 @@ function cn(...inputs: ClassValue[]) {
 
 interface BadgeProps {
   children: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
+  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info' | 'neutral';
+  /** Fully rounded pill instead of the default 4px "Tag label" radius. */
+  pill?: boolean;
+  /** Outlined style (e.g. Budgets "On Track"). */
+  outline?: boolean;
   className?: string;
 }
 
-export const Badge: React.FC<BadgeProps> = ({ children, variant = 'primary', className }) => {
-  const variants = {
-    primary: 'bg-[var(--color-primary-lightest)] text-[var(--color-primary)] border-[var(--color-primary-light)]',
-    secondary: 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] border-[var(--color-border-primary)]',
-    success: 'bg-[var(--color-success-bg)] text-[var(--color-success-dark)] border-[var(--color-success-light)]',
-    warning: 'bg-[var(--color-warning-bg)] text-[var(--color-warning-dark)] border-[var(--color-warning-light)]',
-    error: 'bg-[rgba(245,90,81,0.1)] text-[var(--color-error)] border-[var(--color-error-light)]',
-    info: 'bg-[var(--color-info-bg)] text-[var(--color-info)] border-[var(--color-primary-light)]',
+/**
+ * Figma "Tag label" — Outfit 12/22, radius 4, tinted background, no border by
+ * default. `pill` / `outline` cover the coach-chip and status-pill variants.
+ */
+export const Badge: React.FC<BadgeProps> = ({
+  children,
+  variant = 'primary',
+  pill = false,
+  outline = false,
+  className,
+}) => {
+  const fills = {
+    primary: 'bg-[var(--color-primary-lightest)] text-[var(--color-primary)]',
+    secondary: 'bg-[var(--color-secondary-lightest)] text-[var(--color-secondary-mid)]',
+    success: 'bg-[var(--color-success-bg)] text-[var(--color-success-dark)]',
+    warning: 'bg-[var(--color-warning-bg)] text-[var(--color-warning-darkest)]',
+    error: 'bg-[var(--color-error-bg)] text-[var(--color-error-dark)]',
+    info: 'bg-[var(--color-info-bg)] text-[var(--color-primary)]',
+    neutral: 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)]',
+  };
+  const outlines = {
+    primary: 'border border-[var(--color-primary)] text-[var(--color-primary)]',
+    secondary: 'border border-[var(--color-secondary-mid)] text-[var(--color-secondary-mid)]',
+    success: 'border border-[var(--color-success)] text-[var(--color-success-dark)]',
+    warning: 'border border-[var(--color-warning)] text-[var(--color-warning-darkest)]',
+    error: 'border border-[var(--color-error)] text-[var(--color-error-dark)]',
+    info: 'border border-[var(--color-primary)] text-[var(--color-primary)]',
+    neutral: 'border border-[var(--color-border-primary)] text-[var(--color-text-secondary)]',
   };
 
   return (
     <span
       className={cn(
-        'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border',
-        variants[variant],
-        className
+        'inline-flex items-center gap-1 px-3 py-1 text-xs font-normal leading-[22px] whitespace-nowrap',
+        pill ? 'rounded-full' : 'rounded-[4px]',
+        outline ? outlines[variant] : fills[variant],
+        className,
       )}
     >
       {children}

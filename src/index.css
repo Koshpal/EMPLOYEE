@@ -1,96 +1,158 @@
 @import "tailwindcss";
 
+/* ===========================================================================
+   Koshpal Employee — Design System
+   Tokens mirror the Figma "Financial Dashboard — Employee" library
+   (hnL9GzAt6hLx34MMQ0zX9r). Semantic token names are kept stable so existing
+   pages keep working; only their values were re-pointed to the Figma palette.
+   Figma text styles:
+     Title/Medium     Plus Jakarta Sans SemiBold 24/44
+     Title/xSmall     Plus Jakarta Sans SemiBold 18/32
+     Title/2xSmall    PP Neue Montreal   Medium   16/30
+     Headline/Medium  Plus Jakarta Sans Regular  28/46
+     Headline/xSmall  Plus Jakarta Sans Regular  16/26
+     Body/Large       Outfit             Regular  20/36
+     Body/Medium      Outfit             Regular  16/28
+     Body/Small       Outfit             Regular  14/24
+     Body/xSmall      Geist              Regular  12/22
+     Body/2xSmall     Outfit             Regular  10/18
+     Label/Large      Geist              SemiBold 24/32
+     Label/2xSmall    Geist              Medium   12/22
+=========================================================================== */
+
+@theme {
+  --font-heading: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-body: 'Outfit', ui-sans-serif, system-ui, sans-serif;
+  --font-label: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --font-grotesque: 'PP Neue Montreal', 'Plus Jakarta Sans', ui-sans-serif, sans-serif;
+
+  /* Figma raw scale — use directly in new Figma-derived components */
+  --color-primary-100: #d6e2f8;
+  --color-primary-300: #7ea8f8;
+  --color-primary-400: #548bf5;
+  --color-primary-600: #334eac;
+  --color-primary-800: #192b63;
+
+  --color-secondary-50: #e8fafc;
+  --color-secondary-100: #cdf4f9;
+  --color-secondary-500: #00bcd4;
+  --color-secondary-600: #0097ab;
+  --color-secondary-800: #044a53;
+
+  --color-neutral-0: #ffffff;
+  --color-neutral-50: #f2f2f2;
+  --color-neutral-100: #e4e4e4;
+  --color-neutral-300: #adadad;
+  --color-neutral-400: #919191;
+  --color-neutral-500: #757575;
+  --color-neutral-600: #5e5e5e;
+  --color-neutral-700: #474747;
+  --color-neutral-800: #303030;
+  --color-neutral-900: #181818;
+
+  --color-success-50: #eefeee;
+  --color-success-500: #4caf50;
+  --color-success-900: #1b3d1c;
+  --color-warning-50: #fff9ef;
+  --color-warning-500: #ff9800;
+  --color-warning-900: #5c3700;
+  --color-error-500: #f44336;
+  --color-info-50: #edf2fe;
+}
+
 :root {
-  /* Koshpal Primary Colors */
-  --color-primary: #334eac;
-  --color-primary-darkest: #081f5c;
-  --color-primary-mid: #99a6d6;
-  --color-primary-light: #ccd3ea;
-  --color-primary-lightest: #eff1f8;
+  /* ── Primary ─────────────────────────────────────────────────────────── */
+  --color-primary: #334eac;          /* Primary/600 */
+  --color-primary-darkest: #192b63;  /* Primary/800 */
+  --color-primary-mid: #7ea8f8;      /* Primary/300 */
+  --color-primary-light: #d6e2f8;    /* Primary/100 */
+  --color-primary-lightest: #edf2fe; /* Semantic/info/50 */
 
-  /* Koshpal Secondary Colors */
-  --color-secondary: #17a2b8;
-  --color-secondary-darkest: #117a8a;
-  --color-secondary-mid: #2b8997;
-  --color-secondary-light: #7bb5be;
-  --color-secondary-lightest: #eeeeee;
+  /* ── Secondary ───────────────────────────────────────────────────────── */
+  --color-secondary: #00bcd4;         /* Secondary/500 */
+  --color-secondary-darkest: #044a53; /* Secondary/800 */
+  --color-secondary-mid: #0097ab;     /* Secondary/600 */
+  --color-secondary-light: #cdf4f9;   /* Secondary/100 */
+  --color-secondary-lightest: #e8fafc;/* Secondary/50 */
 
-  /* Koshpal Black/Grey Scale */
+  /* ── Neutral / grey ──────────────────────────────────────────────────── */
   --color-black-darkest: #000000;
-  --color-black-dark: #1a1a1a;
-  --color-black-mid: #262626;
-  --color-black-light: #333333;
-  --color-black-lightest: #4d4d4d;
-  
-  --color-grey-darkest: #666666;
-  --color-grey-dark: #808080;
-  --color-grey-mid: #999999;
-  --color-grey-light: #b3b3b3;
-  --color-grey-lightest: #e0e0e0;
-  
+  --color-black-dark: #181818;    /* Neutral/900 */
+  --color-black-mid: #303030;     /* Neutral/800 */
+  --color-black-light: #474747;   /* Neutral/700 */
+  --color-black-lightest: #5e5e5e;/* Neutral/600 */
+
+  --color-grey-darkest: #757575;  /* Neutral/500 */
+  --color-grey-dark: #919191;     /* Neutral/400 */
+  --color-grey-mid: #adadad;      /* Neutral/300 */
+  --color-grey-light: #d4d4d4;
+  --color-grey-lightest: #e4e4e4; /* Neutral/100 */
+
   --color-white-darkest: #ffffff;
   --color-white-dark: #fafafa;
-  --color-white-mid: #f5f5f5;
-  --color-white-light: #f0f0f0;
-  --color-white-lightest: #eaeaea;
+  --color-white-mid: #f6f6f6;
+  --color-white-light: #f2f2f2;   /* Neutral/50 */
+  --color-white-lightest: #e4e4e4;
 
-  /* Semantic Colors - Green */
-  --color-success: #80b597;
-  --color-success-light: #9ac4ab;
-  --color-success-dark: #67a682;
-  --color-success-darkest: #1b7a43;
-  --color-success-bg: rgba(128, 181, 151, 0.2);
+  /* ── Semantic — Green ────────────────────────────────────────────────── */
+  --color-success: #4caf50;         /* Semantic/success/500 */
+  --color-success-light: #a5d6a7;
+  --color-success-dark: #43a047;
+  --color-success-darkest: #1b3d1c; /* Semantic/success/900 */
+  --color-success-bg: #eefeee;      /* Semantic/success/50 */
 
-  /* Semantic Colors - Orange */
-  --color-warning: #f5a038;
-  --color-warning-light: #fcc178;
-  --color-warning-dark: #d47602;
-  --color-warning-bg: rgba(245, 160, 56, 0.2);
+  /* ── Semantic — Orange ──────────────────────────────────────────────── */
+  --color-warning: #ff9800;          /* Semantic/warning/500 */
+  --color-warning-light: #ffcc80;
+  --color-warning-dark: #f57c00;
+  --color-warning-darkest: #5c3700;  /* Semantic/warning/900 */
+  --color-warning-bg: #fff9ef;       /* Semantic/warning/50 */
 
-  /* Semantic Colors - Red */
-  --color-error: #f55a51;
-  --color-error-light: #fa817a;
-  --color-error-dark: #d5332a;
+  /* ── Semantic — Red ─────────────────────────────────────────────────── */
+  --color-error: #f44336;            /* Semantic/error/500 */
+  --color-error-light: #ef9a9a;
+  --color-error-dark: #e53935;
+  --color-error-bg: #fdecea;
 
   --color-info: #334eac;
-  --color-info-bg: rgba(23, 162, 184, 0.125);
+  --color-info-bg: #edf2fe;          /* Semantic/info/50 */
 
-  --color-overlay: rgba(0, 0, 0, 0.5);
+  --color-overlay: rgba(24, 24, 24, 0.5);
 
   /* Calendar Colors */
-  --color-calendar-today-bg: rgba(74, 94, 175, 0.02);
-  --color-calendar-confirmed-bg: rgba(147, 197, 253, 0.3);
-  --color-calendar-confirmed-border: rgba(59, 130, 246, 0.5);
+  --color-calendar-today-bg: rgba(51, 78, 172, 0.04);
+  --color-calendar-confirmed-bg: rgba(126, 168, 248, 0.3);
+  --color-calendar-confirmed-border: rgba(51, 78, 172, 0.5);
   --color-calendar-confirmed-text: #334eac;
-  --color-calendar-completed-bg: rgba(134, 239, 172, 0.3);
-  --color-calendar-completed-border: rgba(34, 197, 94, 0.5);
-  --color-calendar-completed-text: #15803d;
-  --color-calendar-pending-bg: rgba(251, 191, 36, 0.3);
-  --color-calendar-pending-border: rgba(245, 158, 11, 0.5);
-  --color-calendar-pending-text: #b45309;
+  --color-calendar-completed-bg: rgba(76, 175, 80, 0.24);
+  --color-calendar-completed-border: rgba(76, 175, 80, 0.5);
+  --color-calendar-completed-text: #1b3d1c;
+  --color-calendar-pending-bg: rgba(255, 152, 0, 0.24);
+  --color-calendar-pending-border: rgba(255, 152, 0, 0.5);
+  --color-calendar-pending-text: #5c3700;
 
-  /* Background Colors - Light Mode */
+  /* ── Backgrounds — Light ────────────────────────────────────────────── */
   --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f9fafb;
-  --color-bg-tertiary: #f3f4f6;
+  --color-bg-secondary: #f6f6f6;   /* app canvas — Figma "light grey" */
+  --color-bg-tertiary: #f2f2f2;    /* Neutral/50 */
   --color-bg-card: #ffffff;
 
-  /* Text Colors - Light Mode */
-  --color-text-primary: #111827;
-  --color-text-secondary: #6b7280;
-  --color-text-tertiary: #9ca3af;
+  /* ── Text — Light ──────────────────────────────────────────────────── */
+  --color-text-primary: #181818;   /* Neutral/900 */
+  --color-text-secondary: #5e5e5e; /* Neutral/600 */
+  --color-text-tertiary: #919191;  /* Neutral/400 */
   --color-text-inverse: #ffffff;
 
-  /* Border Colors - Light Mode */
-  --color-border-primary: #e5e7eb;
-  --color-border-secondary: #d1d5db;
-  --color-border-focus: #3b82f6;
+  /* ── Border — Light ────────────────────────────────────────────────── */
+  --color-border-primary: #e4e4e4;   /* Neutral/100 */
+  --color-border-secondary: #d4d4d4;
+  --color-border-focus: #548bf5;     /* Primary/400 */
 
-  /* Input Colors - Light Mode */
+  /* ── Input — Light ─────────────────────────────────────────────────── */
   --color-input-bg: #ffffff;
-  --color-input-border: #d1d5db;
-  --color-input-text: #111827;
-  --color-input-placeholder: #9ca3af;
+  --color-input-border: #e4e4e4;
+  --color-input-text: #181818;
+  --color-input-placeholder: #919191;
 
   /* Spacing */
   --spacing-xs: 0.25rem;
@@ -101,23 +163,27 @@
   --spacing-2xl: 3rem;
   --spacing-3xl: 4rem;
 
-  /* Border Radius */
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
-  --radius-2xl: 1.5rem;
+  /* Border Radius — Figma: 8 cards/buttons, 16 stat tiles, 24/26 icon pills */
+  --radius-sm: 0.375rem; /* 6 */
+  --radius-md: 0.5rem;   /* 8 */
+  --radius-lg: 0.75rem;  /* 12 */
+  --radius-xl: 1rem;     /* 16 */
+  --radius-2xl: 1.25rem; /* 20 */
   --radius-full: 9999px;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  /* Shadows — Figma effects */
+  --shadow-drop-low: 2px 2px 7px 0 rgba(65, 74, 83, 0.08); /* Drop Shadow Low */
+  --shadow-soft: 0 4px 30px 0 rgba(46, 45, 116, 0.10);     /* Soft Shadow */
+  --shadow-sm: 2px 2px 7px 0 rgba(65, 74, 83, 0.08);
+  --shadow-md: 0 4px 20px 0 rgba(46, 45, 116, 0.08);
+  --shadow-lg: 0 4px 30px 0 rgba(46, 45, 116, 0.10);
+  --shadow-xl: 0 8px 40px 0 rgba(46, 45, 116, 0.16);
 
-  /* Typography - Koshpal Design System */
-  --font-family-primary: 'Outfit';
-  --font-family-secondary: 'Plus Jakarta Sans';
+  /* Typography families */
+  --font-family-primary: 'Plus Jakarta Sans';   /* headings / titles */
+  --font-family-secondary: 'Outfit';            /* body */
+  --font-family-label: 'Geist';                 /* labels / captions */
+  --font-family-grotesque: 'PP Neue Montreal';  /* Title/2xSmall */
 
   /* Transitions */
   --transition-fast: 150ms ease-in-out;
@@ -133,156 +199,158 @@
   --z-popover: 1060;
   --z-tooltip: 1070;
 
-  /* Sidebar Dimensions */
-  --sidebar-width: 288px;
-  --sidebar-collapsed-width: 80px;
-  --header-height: 89px;
+  /* Sidebar Dimensions — Figma shell */
+  --sidebar-width: 264px;
+  --sidebar-collapsed-width: 88px;
+  --header-height: 80px;
 }
 
-/* Dark Mode */
+/* ── Dark Mode ─────────────────────────────────────────────────────────── */
 [data-theme='dark'] {
   --color-bg-primary: #0f172a;
-  --color-bg-secondary: #1e293b;
-  --color-bg-tertiary: #334155;
-  --color-bg-card: #1e293b;
+  --color-bg-secondary: #0b1120;
+  --color-bg-tertiary: #1e293b;
+  --color-bg-card: #131c31;
 
-  --color-text-primary: #f1f5f9;
-  --color-text-secondary: #cbd5e1;
-  --color-text-tertiary: #94a3b8;
+  --color-text-primary: #f4f5f7;
+  --color-text-secondary: #b8c0cc;
+  --color-text-tertiary: #8a93a3;
   --color-text-inverse: #0f172a;
 
-  --color-border-primary: #334155;
-  --color-border-secondary: #475569;
-  --color-border-focus: #60a5fa;
+  --color-border-primary: #273244;
+  --color-border-secondary: #3a475c;
+  --color-border-focus: #7ea8f8;
 
-  --color-input-bg: #1e293b;
-  --color-input-border: #475569;
-  --color-input-text: #f1f5f9;
-  --color-input-placeholder: #94a3b8;
+  --color-input-bg: #131c31;
+  --color-input-border: #3a475c;
+  --color-input-text: #f4f5f7;
+  --color-input-placeholder: #8a93a3;
 
-  --color-primary: #60a5fa;
-  --color-primary-darkest: #1e40af;
-  --color-primary-mid: #93c5fd;
-  --color-primary-light: #dbeafe;
-  --color-primary-lightest: #eff6ff;
+  --color-primary: #7ea8f8;         /* Primary/300 */
+  --color-primary-darkest: #192b63;
+  --color-primary-mid: #548bf5;
+  --color-primary-light: #22345f;
+  --color-primary-lightest: #1a2547;
 
-  --color-secondary: #22d3ee;
-  --color-secondary-darkest: #0891b2;
-  --color-secondary-mid: #67e8f9;
-  --color-secondary-light: #a5f3fc;
-  --color-secondary-lightest: #ecfeff;
+  --color-secondary: #2fd4e6;
+  --color-secondary-darkest: #044a53;
+  --color-secondary-mid: #0097ab;
+  --color-secondary-light: #0e3b43;
+  --color-secondary-lightest: #0b2a30;
 
   --color-black-darkest: #ffffff;
-  --color-black-dark: #f1f5f9;
+  --color-black-dark: #f4f5f7;
   --color-black-mid: #e2e8f0;
   --color-black-light: #cbd5e1;
   --color-black-lightest: #94a3b8;
-  
+
   --color-grey-darkest: #f1f5f9;
-  --color-grey-dark: #e2e8f0;
-  --color-grey-mid: #cbd5e1;
-  --color-grey-light: #94a3b8;
-  --color-grey-lightest: #475569;
-  
+  --color-grey-dark: #cbd5e1;
+  --color-grey-mid: #94a3b8;
+  --color-grey-light: #64748b;
+  --color-grey-lightest: #334155;
+
   --color-white-darkest: #0f172a;
-  --color-white-dark: #1e293b;
-  --color-white-mid: #334155;
-  --color-white-light: #475569;
-  --color-white-lightest: #64748b;
+  --color-white-dark: #131c31;
+  --color-white-mid: #1e293b;
+  --color-white-light: #273244;
+  --color-white-lightest: #3a475c;
 
-  --color-success: #34d399;
-  --color-success-light: #6ee7b7;
-  --color-success-dark: #10b981;
-  --color-success-darkest: #047857;
-  --color-success-bg: rgba(10, 185, 129, 0.2);
+  --color-success: #66bb6a;
+  --color-success-light: #81c784;
+  --color-success-dark: #4caf50;
+  --color-success-darkest: #a5d6a7;
+  --color-success-bg: rgba(76, 175, 80, 0.16);
 
-  --color-warning: #fbbf24;
-  --color-warning-light: #fcd34d;
-  --color-warning-dark: #f59e0b;
-  --color-warning-bg: rgba(251, 191, 36, 0.2);
+  --color-warning: #ffa726;
+  --color-warning-light: #ffb74d;
+  --color-warning-dark: #ff9800;
+  --color-warning-darkest: #ffcc80;
+  --color-warning-bg: rgba(255, 152, 0, 0.16);
 
-  --color-error: #f87171;
-  --color-error-light: #fca5a5;
-  --color-error-dark: #ef4444;
+  --color-error: #ef5350;
+  --color-error-light: #e57373;
+  --color-error-dark: #f44336;
+  --color-error-bg: rgba(244, 67, 54, 0.16);
 
-  --color-info: #60a5fa;
-  --color-info-bg: rgba(96, 165, 250, 0.125);
+  --color-info: #7ea8f8;
+  --color-info-bg: rgba(126, 168, 248, 0.14);
 
-  --color-overlay: rgba(0, 0, 0, 0.5);
+  --color-overlay: rgba(0, 0, 0, 0.6);
 
-  /* Calendar Colors */
-  --color-calendar-today-bg: rgba(96, 165, 250, 0.02);
-  --color-calendar-confirmed-bg: rgba(147, 197, 253, 0.3);
-  --color-calendar-confirmed-border: rgba(59, 130, 246, 0.5);
-  --color-calendar-confirmed-text: #60a5fa;
-  --color-calendar-completed-bg: rgba(134, 239, 172, 0.3);
-  --color-calendar-completed-border: rgba(34, 197, 94, 0.5);
-  --color-calendar-completed-text: #10b981;
-  --color-calendar-pending-bg: rgba(251, 191, 36, 0.3);
-  --color-calendar-pending-border: rgba(245, 158, 11, 0.5);
-  --color-calendar-pending-text: #f59e0b;
+  --color-calendar-today-bg: rgba(126, 168, 248, 0.06);
+  --color-calendar-confirmed-bg: rgba(126, 168, 248, 0.25);
+  --color-calendar-confirmed-border: rgba(126, 168, 248, 0.5);
+  --color-calendar-confirmed-text: #7ea8f8;
+  --color-calendar-completed-bg: rgba(76, 175, 80, 0.25);
+  --color-calendar-completed-border: rgba(76, 175, 80, 0.5);
+  --color-calendar-completed-text: #81c784;
+  --color-calendar-pending-bg: rgba(255, 152, 0, 0.25);
+  --color-calendar-pending-border: rgba(255, 152, 0, 0.5);
+  --color-calendar-pending-text: #ffb74d;
 }
 
-/* Base Typography Styles */
+/* ── Global UI scale ───────────────────────────────────────────────────────
+   One knob that shrinks the entire interface — fonts, card sizes, spacing,
+   arbitrary px values, borders, shadows, images — by a fixed ratio. The Figma
+   design was authored at 1× and reads oversized in the app shell, so we render
+   it slightly smaller everywhere while keeping every proportion identical.
+   Adjust --ui-scale to taste (1 = original, 0.85 = 15% smaller).
+=========================================================================== */
+:root {
+  --ui-scale: 0.75;
+  zoom: var(--ui-scale);
+}
+
+/* ── Base ──────────────────────────────────────────────────────────────── */
 body {
-  font-family: var(--font-family-secondary);
-  font-size: 0.875rem;
+  font-family: var(--font-family-secondary), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1rem;      /* Body/Medium 16 */
   font-weight: 400;
-  line-height: 1.25rem;
+  line-height: 1.75rem; /* 28 */
   background-color: var(--color-bg-secondary);
   color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-family-primary);
+  font-family: var(--font-family-primary), ui-sans-serif, system-ui, sans-serif;
 }
 
-/* Typography Utility Classes */
-.text-h1 {
-  font-family: 'Outfit';
-  font-size: 2rem;
-  font-weight: 700;
-  line-height: 2.5rem;
-  letter-spacing: -0.01em;
-}
+/* ===========================================================================
+   Typography utilities — one class per Figma text style, plus back-compat
+   aliases (.text-h1…h6, .text-body-*) kept so existing pages don't shift.
+=========================================================================== */
 
-.text-h2 {
-  font-family: 'Outfit';
-  font-size: 1.75rem;
-  font-weight: 600;
-  line-height: 2.25rem;
-}
+/* Titles — Plus Jakarta Sans SemiBold */
+.text-title-lg  { font-family: 'Plus Jakarta Sans'; font-size: 2rem;    font-weight: 600; line-height: 2.75rem; letter-spacing: -0.01em; } /* 32/44 page title */
+.text-title-md  { font-family: 'Plus Jakarta Sans'; font-size: 1.5rem;  font-weight: 600; line-height: 2.75rem; } /* Title/Medium 24/44 */
+.text-title-sm  { font-family: 'Plus Jakarta Sans'; font-size: 1.25rem; font-weight: 600; line-height: 2rem; }     /* 20/32 */
+.text-title-xs  { font-family: 'Plus Jakarta Sans'; font-size: 1.125rem;font-weight: 600; line-height: 2rem; }     /* Title/xSmall 18/32 */
+.text-title-2xs { font-family: var(--font-family-grotesque), 'Plus Jakarta Sans'; font-size: 1rem; font-weight: 500; line-height: 1.875rem; } /* Title/2xSmall 16/30 */
 
-.text-h3 {
-  font-family: 'Outfit';
-  font-size: 1.375rem;
-  font-weight: 600;
-  line-height: 1.875rem;
-}
+/* Headlines — Plus Jakarta Sans Regular */
+.text-headline-md { font-family: 'Plus Jakarta Sans'; font-size: 1.75rem; font-weight: 400; line-height: 2.875rem; } /* Headline/Medium 28/46 */
+.text-headline-xs { font-family: 'Plus Jakarta Sans'; font-size: 1rem;    font-weight: 400; line-height: 1.625rem; } /* Headline/xSmall 16/26 */
 
-.text-h4 {
-  font-family: 'Outfit';
-  font-size: 1.125rem;
-  font-weight: 600;
-  line-height: 1.625rem;
-  letter-spacing: 0.01em;
-}
+/* Body — Outfit Regular */
+.text-body-lg  { font-family: 'Outfit'; font-size: 1.25rem;  font-weight: 400; line-height: 2.25rem; }  /* Body/Large 20/36 */
+.text-body-md  { font-family: 'Outfit'; font-size: 1rem;     font-weight: 400; line-height: 1.75rem; }  /* Body/Medium 16/28 */
+.text-body-sm  { font-family: 'Outfit'; font-size: 0.875rem; font-weight: 400; line-height: 1.5rem; }   /* Body/Small 14/24 */
+.text-body-xs  { font-family: 'Geist';  font-size: 0.75rem;  font-weight: 400; line-height: 1.375rem; } /* Body/xSmall 12/22 */
+.text-body-2xs { font-family: 'Outfit'; font-size: 0.625rem; font-weight: 400; line-height: 1.125rem; }/* Body/2xSmall 10/18 */
 
-.text-h5 {
-  font-family: 'Outfit';
-  font-size: 1rem;
-  font-weight: 600;
-  line-height: 1.5rem;
-  letter-spacing: 0.01em;
-}
+/* Labels — Geist */
+.text-label-lg  { font-family: 'Geist'; font-size: 1.5rem;  font-weight: 600; line-height: 2rem; }      /* Label/Large 24/32 */
+.text-label-2xs { font-family: 'Geist'; font-size: 0.75rem; font-weight: 500; line-height: 1.375rem; }  /* Label/2xSmall 12/22 */
 
-.text-h6 {
-  font-family: 'Outfit';
-  font-size: 0.875rem;
-  font-weight: 500;
-  line-height: 1.25rem;
-  letter-spacing: 0.02em;
-}
+/* ── Back-compat aliases (existing pages) ─────────────────────────────── */
+.text-h1 { font-family: 'Plus Jakarta Sans'; font-size: 2rem;     font-weight: 600; line-height: 2.75rem; letter-spacing: -0.01em; }
+.text-h2 { font-family: 'Plus Jakarta Sans'; font-size: 1.5rem;   font-weight: 600; line-height: 2.25rem; }
+.text-h3 { font-family: 'Plus Jakarta Sans'; font-size: 1.25rem;  font-weight: 600; line-height: 1.875rem; }
+.text-h4 { font-family: 'Plus Jakarta Sans'; font-size: 1.125rem; font-weight: 600; line-height: 1.75rem; }
+.text-h5 { font-family: 'Plus Jakarta Sans'; font-size: 1rem;     font-weight: 600; line-height: 1.5rem; }
+.text-h6 { font-family: 'Plus Jakarta Sans'; font-size: 0.875rem; font-weight: 600; line-height: 1.25rem; letter-spacing: 0.01em; }
 
 .text-subtitle {
   font-family: 'Plus Jakarta Sans';
@@ -292,32 +360,8 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: 0.01em;
 }
 
-.text-body-lg {
-  font-family: 'Plus Jakarta Sans';
-  font-size: 1rem;
-  font-weight: 400;
-  line-height: 1.5rem;
-  letter-spacing: 0.01em;
-}
-
-.text-body-md {
-  font-family: 'Plus Jakarta Sans';
-  font-size: 0.875rem;
-  font-weight: 400;
-  line-height: 1.25rem;
-  letter-spacing: 0.01em;
-}
-
-.text-body-sm {
-  font-family: 'Plus Jakarta Sans';
-  font-size: 0.75rem;
-  font-weight: 400;
-  line-height: 1.125rem;
-  letter-spacing: 0.02em;
-}
-
 .text-label {
-  font-family: 'Plus Jakarta Sans';
+  font-family: 'Geist';
   font-size: 0.75rem;
   font-weight: 600;
   line-height: 1rem;
@@ -325,11 +369,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .text-caption {
-  font-family: 'Plus Jakarta Sans';
-  font-size: 0.6875rem;
+  font-family: 'Geist';
+  font-size: 0.75rem;
   font-weight: 400;
-  line-height: 1rem;
-  letter-spacing: 0.02em;
+  line-height: 1.375rem;
 }
 
 .text-overline {
@@ -342,11 +385,11 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .text-button {
-  font-family: 'Plus Jakarta Sans';
+  font-family: 'Outfit';
   font-size: 0.875rem;
   font-weight: 600;
-  line-height: 1.25rem;
-  letter-spacing: 0.06em;
+  line-height: 1.5rem;
+  letter-spacing: 0.01em;
 }
 
 .text-mono-numeric {
@@ -366,22 +409,31 @@ body, header, aside, nav, main, footer, section, article, .bg-card,
     border-color var(--transition-base);
 }
 
-/* Global Font Rules */
+/* ── Global font rules ────────────────────────────────────────────────── */
 h1, h2, h3, h4, h5, h6,
 .font-heading,
 [class*="text-h"],
+[class*="text-title"],
+[class*="text-headline"],
 [class*="text-display"] {
-  font-family: 'Outfit', sans-serif !important;
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif !important;
 }
 
 body, p, span, a, button, input, textarea, select, label, div,
 .font-body,
-[class*="text-body"],
-[class*="text-subtitle"],
-[class*="text-button"],
+[class*="text-body-lg"],
+[class*="text-body-md"],
+[class*="text-body-sm"],
+[class*="text-body-2xs"],
+[class*="text-subtitle"] {
+  font-family: 'Outfit', ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-label,
+[class*="text-body-xs"],
 [class*="text-label"],
 [class*="text-caption"] {
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Geist', ui-sans-serif, system-ui, sans-serif;
 }
 
 button {
@@ -389,9 +441,7 @@ button {
 }
 
 /* ---------------------------------------------------------------------------
-   Entrance animations — these utility classes were referenced across ~10
-   components (Login, modals, cards, Calendar…) but had no keyframes, so the
-   elements never animated. Defined here once.
+   Entrance animations
 --------------------------------------------------------------------------- */
 @keyframes kp-fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes kp-slide-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
@@ -415,3 +465,7 @@ button {
   .animate-scale-in,
   .animate-shake { animation: none; }
 }
+
+/* Thin scrollbars for internal scroll areas */
+.scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wallet, Plus, Pencil, Trash2, X, ChevronDown } from 'lucide-react';
+import { Wallet, Plus, Pencil, Trash2, X, ChevronDown, Search, SlidersHorizontal, ChevronRight } from 'lucide-react';
 import { Layout } from '../../components/common/Layout';
 import {
   getBudgets, getBudgetProgress, createBudget, updateBudget, deleteBudget,
@@ -11,13 +12,16 @@ import type {
 import {
   DEFAULT_CATEGORIES, subCategoriesOf, categoryByName, iconFor,
 } from '../../data/financeCategories';
+import { SummarySection } from '../../components/dashboard/widgets';
+import { SUMMARY_STYLES } from '../../components/dashboard/helpers';
+import { IconBell, IconSettings2 } from '../../components/icons/figma';
+import { FinanceTabs } from '../../components/finance/FinanceTabs';
 
 const fadeUp = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 } };
 
+/** Figma shows full Indian-grouped numbers (₹2,000 — not ₹2.0K). */
 function formatINR(n: number) {
-  if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`;
-  if (n >= 1000) return `₹${(n / 1000).toFixed(1)}K`;
-  return `₹${Math.round(n).toLocaleString('en-IN')}`;
+  return `₹${Math.round(n || 0).toLocaleString('en-IN')}`;
 }
 
 const PERIODS: BudgetPeriod[] = ['WEEKLY', 'MONTHLY', 'YEARLY'];
@@ -347,97 +351,270 @@ function BudgetModal({ budget, onClose, onSave }: ModalProps) {
   );
 }
 
-// ─── Card ────────────────────────────────────────────────────────────────────
-function BudgetCard({
-  budget, progress, onEdit, onDelete,
+function periodLabel(b: Budget) {
+  if (b.budgetType !== 'RECURRING') return 'One-time';
+  return b.period ? b.period[0] + b.period.slice(1).toLowerCase() : 'Recurring';
+}
+function shortDate(iso: string) {
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// ─── Left: "All Budgets" list row ───────────────────────────────────────────
+function BudgetListRow({
+  budget, selected, onClick,
+}: {
+  budget: Budget;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  const tops = (budget.categories ?? []).filter((c) => !c.parentCategoryId);
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full rounded-[12px] border px-3 py-3.5 text-left transition-colors ${
+        selected
+          ? 'border-[var(--color-primary)] bg-[var(--color-primary-lightest)]'
+          : 'border-[rgba(205,208,205,0.52)] bg-[var(--color-bg-card)] hover:border-[var(--color-primary)]/40'
+      }`}
+    >
+      <div className="flex flex-col gap-2.5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate font-grotesque text-[18px] font-medium leading-8 text-[var(--color-black-mid)]">
+              {budget.title}
+            </p>
+            <p className="font-label text-[14px] font-medium leading-[26px] text-[var(--color-black-lightest)]">
+              {shortDate(budget.startDate)}
+            </p>
+          </div>
+          <div className="shrink-0 text-right">
+            <p className="font-grotesque text-[18px] font-medium leading-8 text-[var(--color-black-dark)]">
+              {formatINR(budget.amount)}
+            </p>
+            <p className="font-label text-[14px] font-medium leading-[26px] text-[var(--color-grey-darkest)]">
+              {periodLabel(budget)}
+            </p>
+          </div>
+        </div>
+        <div className="h-px w-full bg-[var(--color-border-primary)]" />
+        <div className="flex items-center gap-2.5">
+          <span className="flex-1 font-label text-[14px] font-medium leading-[26px] text-[var(--color-black-light)]">
+            Categories:
+          </span>
+          <div className="flex items-center gap-1">
+            {tops.slice(0, 3).map((c) => {
+              const Icon = iconFor(c.iconResId ?? categoryByName(c.name)?.icon);
+              return (
+                <span
+                  key={c.id}
+                  className="flex h-8 w-8 items-center justify-center rounded-full"
+                  style={{ backgroundColor: c.colorHex || 'var(--color-primary)' }}
+                >
+                  <Icon className="h-4 w-4 text-white" />
+                </span>
+              );
+            })}
+            {tops.length > 3 && (
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-white-lightest)] text-[11px] font-medium text-[var(--color-black-mid)]">
+                +{tops.length - 3}
+              </span>
+            )}
+          </div>
+          <ChevronRight className="h-6 w-6 text-[var(--color-text-tertiary)]" />
+        </div>
+      </div>
+    </button>
+  );
+}
+
+// ─── Right: budget detail (header + overview + per-category) ────────────────
+function BudgetDetail({
+  budget, progress, onEdit, onDelete, onAddExpense,
 }: {
   budget: Budget;
   progress?: BudgetProgress;
   onEdit: () => void;
   onDelete: () => void;
+  onAddExpense: () => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [openCat, setOpenCat] = useState<string | null>(null);
   const spent = progress?.totalSpent ?? 0;
-  const pct = progress ? Math.min(100, progress.percentageSpent) : 0;
+  const left = Math.max(0, budget.amount - spent);
+  const pct = progress ? Math.min(100, Math.round(progress.percentageSpent)) : 0;
   const over = progress?.overBudget ?? false;
   const tops = (budget.categories ?? []).filter((c) => !c.parentCategoryId);
+  const subsOf = (parentId: string) =>
+    (budget.categories ?? []).filter((c) => c.parentCategoryId === parentId);
 
   return (
-    <motion.div {...fadeUp} className="bg-[var(--color-bg-card)] border border-[var(--color-border-primary)] rounded-2xl p-5 group">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-[var(--color-primary)]/10 flex items-center justify-center">
-            <Wallet className="w-5 h-5 text-[var(--color-primary)]" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-[var(--color-text-primary)] leading-tight">{budget.title}</h3>
-            <span className="text-[11px] font-medium text-[var(--color-text-tertiary)]">
-              {budget.budgetType === 'RECURRING' ? (budget.period ?? 'Recurring') : 'One-time'} · {tops.length} categories
+    <div className="flex flex-col gap-5 rounded-[8px] bg-[var(--color-bg-card)] p-4 shadow-[var(--shadow-drop-low)]">
+      {/* Header */}
+      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
+        <div>
+          <div className="flex items-center gap-3">
+            <p className="font-grotesque text-[24px] font-medium leading-[44px] text-[var(--color-black-mid)]">
+              {budget.title}
+            </p>
+            <span
+              className={`flex h-[31px] items-center rounded-[22px] border px-3 text-[14px] leading-6 ${
+                over
+                  ? 'border-[var(--color-error)] text-[var(--color-error-dark)]'
+                  : 'border-[var(--color-success-dark)] text-[var(--color-success-dark)]'
+              }`}
+            >
+              {over ? 'Over budget' : 'On Track'}
             </span>
           </div>
+          <p className="font-label text-[16px] font-medium leading-7 text-[var(--color-grey-darkest)]">
+            {shortDate(budget.startDate)}
+            {budget.endDate ? ` - ${shortDate(budget.endDate)}` : ''}
+          </p>
         </div>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-[var(--color-primary)]/10 text-[var(--color-text-tertiary)] hover:text-[var(--color-primary)]">
-            <Pencil className="w-3.5 h-3.5" />
+        <div className="flex h-11 items-center gap-3">
+          <button
+            onClick={onEdit}
+            className="flex h-10 items-center gap-1 rounded-[8px] border border-[var(--color-primary)] pl-4 pr-2.5 text-[14px] leading-6 text-[var(--color-primary)]"
+          >
+            Edit Budget
+            <Pencil className="h-4 w-4" />
           </button>
-          <button onClick={onDelete} className="p-1.5 rounded-lg hover:bg-[var(--color-error-bg)] text-[var(--color-text-tertiary)] hover:text-[var(--color-error-dark)]">
-            <Trash2 className="w-3.5 h-3.5" />
+          <button
+            onClick={onAddExpense}
+            className="flex h-10 items-center gap-1 rounded-[8px] bg-[var(--color-primary)] pl-2.5 pr-4 text-[14px] leading-6 text-white transition-colors hover:bg-[var(--color-primary-darkest)]"
+          >
+            <Plus className="h-5 w-5" />
+            Add Expense
+          </button>
+          <button
+            onClick={onDelete}
+            className="flex h-10 w-10 items-center justify-center rounded-[8px] border border-[var(--color-border-primary)] text-[var(--color-text-tertiary)] hover:border-[var(--color-error)] hover:text-[var(--color-error-dark)]"
+            aria-label="Delete budget"
+          >
+            <Trash2 className="h-4 w-4" />
           </button>
         </div>
       </div>
 
-      <div className="flex items-end justify-between mb-2">
-        <div>
-          <p className="text-xs text-[var(--color-text-tertiary)] mb-0.5">Spent</p>
-          <p className="text-h5 font-bold text-[var(--color-text-primary)] tabular-nums">{formatINR(spent)}</p>
+      {/* Overview strip */}
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-[var(--color-border-primary)] sm:grid-cols-4">
+        {[
+          ['Budget Allocated', budget.amount.toLocaleString('en-IN')],
+          ['Amount used', Math.round(spent).toLocaleString('en-IN')],
+        ].map(([label, value]) => (
+          <div key={label} className="flex flex-col items-center gap-1 p-4">
+            <p className="font-grotesque text-[16px] font-medium leading-[30px] text-[var(--color-grey-darkest)]">{label}</p>
+            <p className="text-[20px] leading-9 text-[var(--color-black-mid)]">{value}</p>
+          </div>
+        ))}
+        <div className="flex flex-col items-center gap-1 p-4">
+          <p className="font-grotesque text-[16px] font-medium leading-[30px] text-[var(--color-grey-darkest)]">Amount left</p>
+          <span className="flex h-8 items-center rounded-[20px] bg-[var(--color-info-bg)] px-4 font-label text-[14px] leading-6 text-[var(--color-primary)]">
+            {Math.round(left).toLocaleString('en-IN')} ({100 - pct}%)
+          </span>
         </div>
-        <div className="text-right">
-          <p className="text-xs text-[var(--color-text-tertiary)] mb-0.5">Budget</p>
-          <p className="text-sm font-semibold text-[var(--color-text-secondary)] tabular-nums">{formatINR(budget.amount)}</p>
+        <div className="flex flex-col items-center gap-2 p-4">
+          <p className="font-grotesque text-[16px] font-medium leading-[30px] text-[var(--color-grey-darkest)]">Progress</p>
+          <div className="flex w-full items-center gap-1">
+            <span className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-[var(--color-white-light)]">
+              <span
+                className="block h-full rounded-full"
+                style={{ width: `${pct}%`, backgroundColor: over ? 'var(--color-error-dark)' : 'var(--color-primary)' }}
+              />
+            </span>
+            <span className="font-label text-[12px] font-medium leading-[22px] text-[var(--color-neutral-600)]">{pct}%</span>
+          </div>
         </div>
       </div>
 
-      <div className="w-full h-2 bg-[var(--color-bg-tertiary)] rounded-full overflow-hidden mb-2">
-        <div
-          className="h-full rounded-full transition-all duration-700"
-          style={{
-            width: `${pct}%`,
-            background: over ? 'var(--color-error-dark)' : 'linear-gradient(90deg, var(--color-primary), #6366f1)',
-          }}
-        />
-      </div>
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-bold" style={{ color: over ? 'var(--color-error-dark)' : 'var(--color-primary)' }}>
-          {progress ? `${Math.round(progress.percentageSpent)}%` : '—'}
-        </span>
-        {tops.length > 0 && (
-          <button onClick={() => setOpen((o) => !o)} className="flex items-center gap-1 text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-primary)]">
-            {open ? 'Hide' : 'Categories'}
-            <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
-          </button>
+      {/* Per-category rows */}
+      <div className="flex flex-col gap-3">
+        {tops.length === 0 && (
+          <p className="rounded-[12px] border border-[rgba(14,15,12,0.12)] p-4 text-body-sm text-[var(--color-text-secondary)]">
+            This budget has no categories yet. Use “Edit Budget” to add some.
+          </p>
         )}
-      </div>
-
-      {open && (
-        <div className="mt-3 pt-3 border-t border-[var(--color-border-primary)] space-y-1.5">
-          {tops.map((c) => {
-            const Icon = iconFor(c.iconResId ?? categoryByName(c.name)?.icon);
-            const p = progress?.categories.find((x) => x.id === c.id);
-            return (
-              <div key={c.id} className="flex items-center gap-2 text-xs">
-                <Icon className="w-3.5 h-3.5" style={{ color: c.colorHex }} />
-                <span className="text-[var(--color-text-secondary)] flex-1">{c.name}</span>
-                <span className="tabular-nums text-[var(--color-text-tertiary)]">
-                  {p ? `${formatINR(p.spent)} / ` : ''}{formatINR(c.allottedAmount)}
-                </span>
+        {tops.map((c) => {
+          const Icon = iconFor(c.iconResId ?? categoryByName(c.name)?.icon);
+          const cp = progress?.categories.find((x) => x.id === c.id);
+          const catSpent = cp?.spent ?? 0;
+          const catLeft = Math.max(0, c.allottedAmount - catSpent);
+          const catPct = c.allottedAmount > 0 ? Math.min(100, Math.round((catSpent / c.allottedAmount) * 100)) : 0;
+          const subs = subsOf(c.id);
+          const open = openCat === c.id;
+          return (
+            <div key={c.id} className="rounded-[12px] border border-[rgba(14,15,12,0.12)] pt-3.5">
+              <div className="flex items-center gap-7 px-3.5">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full" style={{ backgroundColor: c.colorHex || 'var(--color-primary)' }}>
+                    <Icon className="h-6 w-6 text-white" />
+                  </span>
+                  <div>
+                    <p className="font-grotesque text-[16px] font-medium leading-[30px] text-[var(--color-black-dark)]">{c.name}</p>
+                    <p className="font-label text-[12px] font-medium leading-[22px] text-[var(--color-neutral-600)]">
+                      {formatINR(c.allottedAmount)} Alloted
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-1 items-center gap-2">
+                  <span className="h-[7px] min-w-0 flex-1 overflow-hidden rounded-full bg-[var(--color-white-light)]">
+                    <span className="block h-full rounded-full" style={{ width: `${catPct}%`, backgroundColor: c.colorHex || 'var(--color-primary)' }} />
+                  </span>
+                  <span className="font-label text-[12px] font-medium leading-[22px] text-[var(--color-black-lightest)]">{catPct}%</span>
+                </div>
+                <div className="flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="font-grotesque text-[18px] font-medium leading-8 text-[var(--color-primary)]">{formatINR(catLeft)}</span>
+                  <span className="font-label text-[12px] font-medium leading-[22px] text-[var(--color-neutral-600)]">Amount left</span>
+                </div>
               </div>
-            );
-          })}
-        </div>
-      )}
-    </motion.div>
+              <div className="mt-3.5 flex items-center justify-between border-t border-dashed border-[var(--color-white-lightest)] px-3.5 py-2">
+                <span className="font-grotesque text-[16px] font-medium leading-[30px] text-[var(--color-black-light)]">Sub-categories</span>
+                {subs.length > 0 && (
+                  <button
+                    onClick={() => setOpenCat(open ? null : c.id)}
+                    className="flex items-center gap-1 text-[16px] leading-7 text-[var(--color-primary)] underline"
+                  >
+                    {open ? 'View less' : 'View more'}
+                    <ChevronDown className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+                  </button>
+                )}
+              </div>
+              {open && subs.length > 0 && (
+                <div className="flex flex-col gap-4 px-3.5 pb-4">
+                  {subs.map((s) => {
+                    const SIcon = iconFor(categoryByName(s.name)?.icon);
+                    const sp = cp?.subCategories.find((x) => x.id === s.id);
+                    const sSpent = sp?.spent ?? 0;
+                    const sPct = s.allottedAmount > 0 ? Math.min(100, Math.round((sSpent / s.allottedAmount) * 100)) : 0;
+                    return (
+                      <div key={s.id} className="flex items-center gap-2">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full" style={{ backgroundColor: c.colorHex || 'var(--color-primary)' }}>
+                          <SIcon className="h-5 w-5 text-white" />
+                        </span>
+                        <div className="flex flex-1 flex-col gap-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[14px] font-medium leading-4 tracking-[0.14px] text-[var(--color-black-dark)]">{s.name}</span>
+                            <span className="flex items-center gap-2.5">
+                              <span className="text-[10px] font-semibold leading-4 tracking-[0.1px] text-[var(--color-black-lightest)]">{sPct}% used</span>
+                              <span className="text-[14px] font-medium leading-4 text-[var(--color-black-dark)]">-{formatINR(sSpent)}</span>
+                            </span>
+                          </div>
+                          <span className="h-[7px] w-full overflow-hidden rounded-full bg-[rgba(205,208,205,0.52)]">
+                            <span className="block h-full rounded-full" style={{ width: `${sPct}%`, backgroundColor: c.colorHex || 'var(--color-primary)' }} />
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
+
 
 // ─── Delete confirm ──────────────────────────────────────────────────────────
 function DeleteConfirm({ budget, onCancel, onConfirm }: { budget: Budget; onCancel: () => void; onConfirm: () => void }) {
@@ -458,7 +635,11 @@ function DeleteConfirm({ budget, onCancel, onConfirm }: { budget: Budget; onCanc
 }
 
 // ─── Page ────────────────────────────────────────────────────────────────────
+const iconBtn =
+  'flex h-10 items-center justify-center rounded-[8px] border border-[var(--color-border-primary)] px-2.5 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)] transition-colors';
+
 export default function Budgets() {
+  const navigate = useNavigate();
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [progress, setProgress] = useState<Record<string, BudgetProgress>>({});
   const [loading, setLoading] = useState(true);
@@ -466,12 +647,15 @@ export default function Budgets() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Budget | null>(null);
   const [toDelete, setToDelete] = useState<Budget | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
 
   async function load() {
     try {
       setError('');
       const list = await getBudgets();
       setBudgets(list);
+      setSelectedId((cur) => cur ?? list[0]?.id ?? null);
       const entries = await Promise.all(
         list.map(async (b) => {
           try { return [b.id, await getBudgetProgress(b.id)] as const; }
@@ -495,73 +679,125 @@ export default function Budgets() {
   async function handleDelete(id: string) {
     await deleteBudget(id);
     setBudgets((p) => p.filter((b) => b.id !== id));
+    setSelectedId((cur) => (cur === id ? null : cur));
     setToDelete(null);
   }
 
   const totalBudgeted = budgets.reduce((s, b) => s + b.amount, 0);
   const totalSpent = Object.values(progress).reduce((s, p) => s + p.totalSpent, 0);
+  const overCount = Object.values(progress).filter((p) => p.overBudget).length;
+  const onTrackCount = budgets.length - overCount;
+
+  const filtered = useMemo(
+    () => budgets.filter((b) => b.title.toLowerCase().includes(query.trim().toLowerCase())),
+    [budgets, query],
+  );
+  const selected = budgets.find((b) => b.id === selectedId) ?? null;
+
+  const headerActions = (
+    <>
+      <button className={iconBtn} aria-label="Notifications"><IconBell size={20} /></button>
+      <button className={iconBtn} aria-label="Settings"><IconSettings2 size={20} /></button>
+    </>
+  );
+
+  const headerBelow = (
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <FinanceTabs active="Budget" />
+      <button
+        onClick={() => { setEditing(null); setShowModal(true); }}
+        className="flex h-10 items-center gap-1 rounded-[8px] bg-[var(--color-primary)] pl-2.5 pr-4 text-[14px] leading-6 text-white transition-colors hover:bg-[var(--color-primary-darkest)]"
+      >
+        <Plus className="h-5 w-5" />
+        Create Budget
+      </button>
+    </div>
+  );
+
+  const summaryTiles = [
+    { label: 'ON TRACK', value: String(onTrackCount), note: `${budgets.length} total`, noteIcon: 'same' as const, ...SUMMARY_STYLES.spendings },
+    { label: 'TOTAL BUDGETS', value: formatINR(totalBudgeted), note: `${budgets.length} budget${budgets.length === 1 ? '' : 's'}`, noteIcon: 'trend' as const, ...SUMMARY_STYLES.budget },
+    { label: 'OVER BUDGET', value: String(overCount), note: overCount ? 'Needs attention' : 'All within limits', noteIcon: 'trend' as const, ...SUMMARY_STYLES.sessions },
+    { label: 'TOTAL SPENT', value: formatINR(totalSpent), note: 'This period', noteIcon: 'trend' as const, ...SUMMARY_STYLES.savings },
+  ];
 
   return (
-    <Layout title="Budgets">
-      <div className="max-w-7xl mx-auto space-y-6 pb-8">
-        <motion.div {...fadeUp} className="flex items-center justify-between">
-          <div>
-            <h1 className="text-h2 text-[var(--color-text-primary)]">Budgets</h1>
-            <p className="text-body-md text-[var(--color-text-secondary)] mt-1">Plan spending by category and track it against your transactions</p>
-          </div>
-          <button onClick={() => { setEditing(null); setShowModal(true); }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--color-primary)] text-white text-sm font-semibold hover:opacity-90 transition-all shadow-sm">
-            <Plus className="w-4 h-4" /> New Budget
-          </button>
-        </motion.div>
-
+    <Layout title="Budgeting" headerActions={headerActions} headerBelow={headerBelow}>
+      <div className="flex flex-col gap-6 pb-8">
         {budgets.length > 0 && (
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-            {[
-              ['Budgets', String(budgets.length)],
-              ['Total Budgeted', formatINR(totalBudgeted)],
-              ['Total Spent', formatINR(totalSpent)],
-            ].map(([label, value]) => (
-              <motion.div key={label} {...fadeUp} className="bg-[var(--color-bg-card)] border border-[var(--color-border-primary)] rounded-2xl p-4">
-                <span className="text-xs font-medium text-[var(--color-text-secondary)]">{label}</span>
-                <p className="text-h4 font-bold text-[var(--color-text-primary)] tabular-nums mt-2">{value}</p>
-              </motion.div>
-            ))}
-          </div>
+          <motion.div {...fadeUp}>
+            <SummarySection tiles={summaryTiles} />
+          </motion.div>
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center h-48">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[var(--color-primary)]" />
+          <div className="flex h-48 items-center justify-center">
+            <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-[var(--color-primary)]" />
           </div>
         ) : error ? (
-          <div className="bg-[var(--color-error-bg)] border border-[var(--color-error-dark)]/30 rounded-2xl p-6 text-center">
-            <p className="text-sm text-[var(--color-error-dark)] font-medium mb-3">{error}</p>
+          <div className="rounded-[12px] border border-[var(--color-error-dark)]/30 bg-[var(--color-error-bg)] p-6 text-center">
+            <p className="mb-3 text-sm font-medium text-[var(--color-error-dark)]">{error}</p>
             <button onClick={load} className="text-xs font-semibold text-[var(--color-primary)] hover:underline">Try again</button>
           </div>
         ) : budgets.length === 0 ? (
-          <motion.div {...fadeUp} className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-20 h-20 rounded-3xl bg-[var(--color-primary)]/10 flex items-center justify-center mb-5">
-              <Wallet className="w-9 h-9 text-[var(--color-primary)]" />
+          <motion.div {...fadeUp} className="flex flex-col items-center justify-center rounded-[8px] bg-[var(--color-bg-card)] py-20 text-center shadow-[var(--shadow-drop-low)]">
+            <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-3xl bg-[var(--color-primary)]/10">
+              <Wallet className="h-9 w-9 text-[var(--color-primary)]" />
             </div>
-            <h3 className="text-h4 text-[var(--color-text-primary)] mb-2">No budgets yet</h3>
-            <p className="text-sm text-[var(--color-text-secondary)] mb-6 max-w-xs">Create a budget, pick the categories it covers, and watch your spending against it.</p>
-            <button onClick={() => { setEditing(null); setShowModal(true); }}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-primary)] text-white text-sm font-semibold hover:opacity-90 transition-all">
-              <Plus className="w-4 h-4" /> Create your first budget
+            <h3 className="font-heading text-[18px] font-semibold text-[var(--color-text-primary)]">No budgets yet</h3>
+            <p className="mb-6 mt-2 max-w-xs text-body-sm text-[var(--color-text-secondary)]">
+              Create a budget, pick the categories it covers, and track your spending against it.
+            </p>
+            <button
+              onClick={() => { setEditing(null); setShowModal(true); }}
+              className="flex items-center gap-2 rounded-[8px] bg-[var(--color-primary)] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-primary-darkest)]"
+            >
+              <Plus className="h-4 w-4" /> Create your first budget
             </button>
           </motion.div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {budgets.map((b) => (
-              <BudgetCard
-                key={b.id}
-                budget={b}
-                progress={progress[b.id]}
-                onEdit={() => { setEditing(b); setShowModal(true); }}
-                onDelete={() => setToDelete(b)}
-              />
-            ))}
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+            {/* Left — All Budgets */}
+            <div className="flex w-full flex-col gap-4 rounded-[8px] bg-[var(--color-bg-card)] p-4 shadow-[var(--shadow-drop-low)] lg:w-[476px]">
+              <h3 className="font-heading text-[18px] font-semibold leading-8 text-[var(--color-black-mid)]">All Budgets</h3>
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 flex-1 items-center gap-2 rounded-[8px] border border-[var(--color-border-primary)] px-2.5">
+                  <Search className="h-5 w-5 text-[var(--color-text-tertiary)]" />
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search budgets..."
+                    className="w-full bg-transparent text-[12px] leading-[22px] text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-tertiary)]"
+                  />
+                </div>
+                <button className={iconBtn} aria-label="Filter"><SlidersHorizontal className="h-5 w-5" /></button>
+              </div>
+              <div className="flex flex-col gap-3">
+                {filtered.map((b) => (
+                  <BudgetListRow key={b.id} budget={b} selected={b.id === selectedId} onClick={() => setSelectedId(b.id)} />
+                ))}
+                {filtered.length === 0 && (
+                  <p className="py-6 text-center text-body-sm text-[var(--color-text-secondary)]">No budgets match “{query}”.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Right — detail */}
+            <div className="min-w-0 flex-1">
+              {selected ? (
+                <BudgetDetail
+                  budget={selected}
+                  progress={progress[selected.id]}
+                  onEdit={() => { setEditing(selected); setShowModal(true); }}
+                  onDelete={() => setToDelete(selected)}
+                  onAddExpense={() => navigate('/finance/transactions')}
+                />
+              ) : (
+                <div className="flex h-full min-h-[200px] items-center justify-center rounded-[8px] bg-[var(--color-bg-card)] p-8 text-body-sm text-[var(--color-text-secondary)] shadow-[var(--shadow-drop-low)]">
+                  Select a budget to see its breakdown.
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

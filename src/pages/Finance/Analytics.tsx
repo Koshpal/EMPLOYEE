@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -6,8 +6,10 @@ import {
 } from 'recharts';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Layout } from '../../components/common/Layout';
+import { Skeleton } from '../../components/common/Skeleton';
+import { useAsync } from '../../hooks/useAsync';
 import { getAnalyticsOverview, getSpendingTrends } from '../../services/finance.service';
-import type { AnalyticsOverview } from '../../types/finance.types';
+import type { AnalyticsOverview, MonthlyTrend } from '../../types/finance.types';
 import { CATEGORY_COLORS } from '../../components/finance/TransactionItem';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -22,20 +24,17 @@ export default function Analytics() {
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
-  const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
-  const [trends, setTrends] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    setLoading(true);
-    Promise.allSettled([
-      getAnalyticsOverview(selectedYear, selectedMonth),
-      getSpendingTrends(12),
-    ]).then(([anal, tr]) => {
-      if (anal.status === 'fulfilled') setAnalytics(anal.value);
-      if (tr.status === 'fulfilled') setTrends((tr.value as any).trends ?? []);
-    }).finally(() => setLoading(false));
-  }, [selectedYear, selectedMonth]);
+  // Overview reloads when the month changes; the 12-month trend series does not
+  // depend on the selected month, so it loads once.
+  const analyticsRes = useAsync(
+    () => getAnalyticsOverview(selectedYear, selectedMonth),
+    [selectedYear, selectedMonth],
+  );
+  const trendsRes = useAsync(() => getSpendingTrends(12), []);
+
+  const analytics: AnalyticsOverview | null = analyticsRes.data ?? null;
+  const trends: MonthlyTrend[] = trendsRes.data?.trends ?? [];
 
   const prevMonth = () => {
     if (selectedMonth === 1) { setSelectedMonth(12); setSelectedYear((y) => y - 1); }
@@ -96,7 +95,7 @@ export default function Analytics() {
         </div>
 
         {/* Summary Cards */}
-        {loading ? (
+        {analyticsRes.loading ? (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="h-24 bg-[var(--color-bg-card)] rounded-2xl animate-pulse border border-[var(--color-border-primary)]" />
@@ -123,7 +122,9 @@ export default function Analytics() {
         {/* Monthly Trend */}
         <div className="bg-[var(--color-bg-card)] border border-[var(--color-border-primary)] rounded-2xl p-6">
           <h3 className="text-h5 text-[var(--color-text-primary)] mb-4">12-Month Trend</h3>
-          {trendData.length > 0 ? (
+          {trendsRes.loading ? (
+            <Skeleton className="h-[240px] w-full" />
+          ) : trendData.length > 0 ? (
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={trendData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-primary)" />
@@ -145,7 +146,9 @@ export default function Analytics() {
           {/* Category Donut */}
           <div className="bg-[var(--color-bg-card)] border border-[var(--color-border-primary)] rounded-2xl p-6">
             <h3 className="text-h5 text-[var(--color-text-primary)] mb-4">Category Breakdown</h3>
-            {pieData.length > 0 ? (
+            {analyticsRes.loading ? (
+              <Skeleton className="h-40 w-full" />
+            ) : pieData.length > 0 ? (
               <div className="flex items-start gap-4">
                 <ResponsiveContainer width={160} height={160}>
                   <PieChart>
@@ -177,7 +180,9 @@ export default function Analytics() {
           {/* Weekly */}
           <div className="bg-[var(--color-bg-card)] border border-[var(--color-border-primary)] rounded-2xl p-6">
             <h3 className="text-h5 text-[var(--color-text-primary)] mb-4">Weekly Breakdown</h3>
-            {weeklyData.length > 0 ? (
+            {analyticsRes.loading ? (
+              <Skeleton className="h-40 w-full" />
+            ) : weeklyData.length > 0 ? (
               <ResponsiveContainer width="100%" height={160}>
                 <BarChart data={weeklyData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-primary)" />
@@ -197,7 +202,9 @@ export default function Analytics() {
         {/* Savings trend line */}
         <div className="bg-[var(--color-bg-card)] border border-[var(--color-border-primary)] rounded-2xl p-6">
           <h3 className="text-h5 text-[var(--color-text-primary)] mb-4">Savings Trend</h3>
-          {trendData.length > 0 ? (
+          {trendsRes.loading ? (
+            <Skeleton className="h-[180px] w-full" />
+          ) : trendData.length > 0 ? (
             <ResponsiveContainer width="100%" height={180}>
               <LineChart data={trendData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-primary)" />

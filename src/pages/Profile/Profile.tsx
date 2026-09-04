@@ -313,10 +313,9 @@ const Profile: React.FC = () => {
                   <div>
                     <p className="font-bold text-[var(--color-text-primary)]">Session reminders</p>
                     <p className="text-xs text-[var(--color-text-secondary)]">
-                      You'll get an email and a calendar invite for every session you book.
+                      An email and calendar invite are sent automatically for every session you book.
                     </p>
                   </div>
-                  <span className="text-xs font-semibold text-[var(--color-success-dark)] whitespace-nowrap">On</span>
                 </div>
               </div>
             </div>
