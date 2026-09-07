@@ -3,7 +3,7 @@ import { Layout } from '../../components/common/Layout';
 import { employeeService } from '../../services/employee.service';
 import type { UserProfile } from '../../types/employee.types';
 import { Button } from '../../components/ui/Button';
-import { User, ShieldCheck, Mail, Phone, Camera, Loader2, CheckCircle, Lock, X, Eye, EyeOff } from 'lucide-react';
+import { User, ShieldCheck, Mail, Phone, Camera, Loader2, CheckCircle, Lock, X, Eye, EyeOff, LogOut } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -326,6 +326,19 @@ const Profile: React.FC = () => {
               <a href={`mailto:${SUPPORT_EMAIL}?subject=Koshpal%20portal%20support`}>
                 <Button variant="outline" size="sm" className="w-full">Contact Support</Button>
               </a>
+            </div>
+
+            <div className="bg-[var(--color-bg-card)] p-8 rounded-3xl border border-[var(--color-border-primary)] shadow-sm">
+              <h3 className="font-bold text-[var(--color-text-primary)] mb-2">Account</h3>
+              <p className="text-sm text-[var(--color-text-secondary)] mb-4">Sign out of the Koshpal portal on this device.</p>
+              <button
+                type="button"
+                onClick={() => logout()}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border border-[var(--color-error)]/30 text-[var(--color-error)] font-bold hover:bg-[var(--color-error)]/10 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Log out
+              </button>
             </div>
           </div>
         </div>

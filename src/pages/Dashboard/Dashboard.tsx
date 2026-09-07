@@ -210,7 +210,7 @@ const Dashboard: React.FC = () => {
             rows={budgetRows}
             onViewAll={() => navigate('/finance/budgets')}
           />
-          <DuesReminderCard onViewAll={() => navigate('/finance/dues-reminders')} />
+          <DuesReminderCard maxItems={4} onViewAll={() => navigate('/finance/dues-reminders')} />
         </motion.div>
       </div>
 

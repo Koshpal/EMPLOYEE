@@ -6,7 +6,8 @@ import { Skeleton } from '../../components/common/Skeleton';
 import { useAsync } from '../../hooks/useAsync';
 import { getAnalyticsOverview, getBudgets } from '../../services/finance.service';
 import type { AnalyticsOverview, Budget } from '../../types/finance.types';
-import { SummarySection } from '../../components/dashboard/widgets';
+import { ChevronRight } from 'lucide-react';
+import { SummarySection, PeriodButton } from '../../components/dashboard/widgets';
 import { SUMMARY_STYLES } from '../../components/dashboard/helpers';
 import { IconBell, IconSettings2 } from '../../components/icons/figma';
 import { FinanceTabs } from '../../components/finance/FinanceTabs';
@@ -76,6 +77,10 @@ export default function SpentByCategory() {
   const overLimit = rows.filter((r) => r.alloted > 0 && r.spent > r.alloted).length;
   const withinLimit = rows.filter((r) => r.alloted > 0).length - overLimit;
   const totalCategories = rows.length;
+  const subCatCount = useMemo(
+    () => budgets.reduce((n, b) => n + (b.categories ?? []).filter((c) => c.parentCategoryId).length, 0),
+    [budgets],
+  );
 
   const headerActions = (
     <>
@@ -116,11 +121,15 @@ export default function SpentByCategory() {
         <motion.div {...fadeUp} transition={{ delay: 0.05 }} className="flex flex-col gap-6 lg:flex-row lg:items-start">
           {/* Left — donut + legend, mirrors the dashboard's Spends by Category widget */}
           <div className="flex w-full flex-col gap-4 rounded-[8px] bg-[var(--color-bg-card)] p-4 shadow-[var(--shadow-drop-low)] lg:w-[336px]">
-            <div>
-              <h3 className="font-heading text-[18px] font-semibold leading-8 text-[var(--color-black-mid)]">Spends by Category</h3>
-              <p className="mt-1 font-label text-[12px] leading-[22px] text-[var(--color-text-tertiary)]">
-                {totalCategories} {totalCategories === 1 ? 'Category' : 'Categories'}
-              </p>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-heading text-[18px] font-semibold leading-8 text-[var(--color-black-mid)]">Spends by Category</h3>
+                <PeriodButton />
+              </div>
+              <div className="flex gap-2.5 font-label text-[12px] font-medium leading-[22px] text-[var(--color-grey-darkest)]">
+                <span>{totalCategories} {totalCategories === 1 ? 'Category' : 'Categories'}</span>
+                <span>{subCatCount} Sub-categories</span>
+              </div>
             </div>
             {loading ? (
               <Skeleton className="h-[200px] w-full" />
@@ -192,6 +201,7 @@ export default function SpentByCategory() {
                             </p>
                           )}
                         </div>
+                        <ChevronRight className="h-5 w-5 shrink-0 text-[var(--color-text-tertiary)]" />
                       </div>
                       {r.alloted > 0 && (
                         <div className="mt-2.5 flex items-center gap-2">

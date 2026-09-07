@@ -111,7 +111,7 @@ export function SummarySection({ tiles, loading = false }: { tiles: SummaryTile[
         </h3>
         <PeriodButton />
       </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {loading &&
           Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={`s-${i}`} className="min-h-[196px] rounded-[16px]" />
@@ -297,7 +297,7 @@ export function IncomeExpenseChart({
       </div>
       <div className="h-[200px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={series} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+          <LineChart data={series} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid vertical={false} stroke="var(--color-border-primary)" strokeDasharray="0" />
             <XAxis
               dataKey="name"
@@ -308,8 +308,11 @@ export function IncomeExpenseChart({
             <YAxis
               tickLine={false}
               axisLine={false}
-              width={40}
+              width={44}
               tick={{ fontSize: 12, fill: 'var(--color-black-mid)' }}
+              tickFormatter={(v: number) =>
+                v >= 1000 ? `${Math.round(v / 1000)}k` : String(Math.round(v))
+              }
             />
             <Tooltip
               contentStyle={{
@@ -320,8 +323,8 @@ export function IncomeExpenseChart({
               }}
               formatter={((v: unknown) => `₹${inr(Number(v))}`) as never}
             />
-            <Line type="monotone" dataKey="Income" stroke="var(--color-primary)" strokeWidth={2} dot={false} />
-            <Line type="monotone" dataKey="Expense" stroke="var(--color-warning)" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="Income" stroke="var(--color-primary)" strokeWidth={2} dot={false} isAnimationActive={false} />
+            <Line type="monotone" dataKey="Expense" stroke="var(--color-warning)" strokeWidth={2} dot={false} isAnimationActive={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -707,7 +710,11 @@ function reminderDateLabel(r: ApiReminder): string {
  * /api/v1/employee/reminders (see services/reminder.service.ts). Updates are
  * optimistic and reconciled against the server response.
  */
-export function DuesReminderCard({ onViewAll }: { onViewAll?: () => void } = {}) {
+export function DuesReminderCard({
+  onViewAll,
+  openAddSignal,
+  maxItems,
+}: { onViewAll?: () => void; openAddSignal?: number; maxItems?: number } = {}) {
   const [items, setItems] = useState<ApiReminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -723,6 +730,11 @@ export function DuesReminderCard({ onViewAll }: { onViewAll?: () => void } = {})
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);
+
+  // External "Add Reminder" trigger (e.g. the page header button).
+  useEffect(() => {
+    if (openAddSignal) setAdding(true);
+  }, [openAddSignal]);
 
   const toggle = async (r: ApiReminder) => {
     const next = !r.isDone;
@@ -792,7 +804,7 @@ export function DuesReminderCard({ onViewAll }: { onViewAll?: () => void } = {})
               No reminders yet. Add one below to keep track of dues and to-dos.
             </p>
           ) : (
-            items.map((it) => (
+            (maxItems ? items.slice(0, maxItems) : items).map((it) => (
               <div
                 key={it.id}
                 className="group flex items-center gap-2 rounded-[16px] border border-[var(--color-border-primary)] p-4"

@@ -449,14 +449,14 @@ function BudgetDetail({
   return (
     <div className="flex flex-col gap-5 rounded-[8px] bg-[var(--color-bg-card)] p-4 shadow-[var(--shadow-drop-low)]">
       {/* Header */}
-      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
-        <div>
+      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <div className="min-w-0">
           <div className="flex items-center gap-3">
-            <p className="font-grotesque text-[24px] font-medium leading-[44px] text-[var(--color-black-mid)]">
+            <p className="truncate font-grotesque text-[24px] font-medium leading-[44px] text-[var(--color-black-mid)]">
               {budget.title}
             </p>
             <span
-              className={`flex h-[31px] items-center rounded-[22px] border px-3 text-[14px] leading-6 ${
+              className={`flex h-[31px] shrink-0 items-center whitespace-nowrap rounded-[22px] border px-3 text-[14px] leading-6 ${
                 over
                   ? 'border-[var(--color-error)] text-[var(--color-error-dark)]'
                   : 'border-[var(--color-success-dark)] text-[var(--color-success-dark)]'
@@ -470,17 +470,17 @@ function BudgetDetail({
             {budget.endDate ? ` - ${shortDate(budget.endDate)}` : ''}
           </p>
         </div>
-        <div className="flex h-11 items-center gap-3">
+        <div className="flex h-11 shrink-0 items-center gap-3">
           <button
             onClick={onEdit}
-            className="flex h-10 items-center gap-1 rounded-[8px] border border-[var(--color-primary)] pl-4 pr-2.5 text-[14px] leading-6 text-[var(--color-primary)]"
+            className="flex h-10 items-center gap-1 whitespace-nowrap rounded-[8px] border border-[var(--color-primary)] pl-4 pr-2.5 text-[14px] leading-6 text-[var(--color-primary)]"
           >
             Edit Budget
             <Pencil className="h-4 w-4" />
           </button>
           <button
             onClick={onAddExpense}
-            className="flex h-10 items-center gap-1 rounded-[8px] bg-[var(--color-primary)] pl-2.5 pr-4 text-[14px] leading-6 text-white transition-colors hover:bg-[var(--color-primary-darkest)]"
+            className="flex h-10 items-center gap-1 whitespace-nowrap rounded-[8px] bg-[var(--color-primary)] pl-2.5 pr-4 text-[14px] leading-6 text-white transition-colors hover:bg-[var(--color-primary-darkest)]"
           >
             <Plus className="h-5 w-5" />
             Add Expense
@@ -502,18 +502,18 @@ function BudgetDetail({
           ['Amount used', Math.round(spent).toLocaleString('en-IN')],
         ].map(([label, value]) => (
           <div key={label} className="flex flex-col items-center gap-1 p-4">
-            <p className="font-grotesque text-[16px] font-medium leading-[30px] text-[var(--color-grey-darkest)]">{label}</p>
+            <p className="whitespace-nowrap font-grotesque text-[16px] font-medium leading-[30px] text-[var(--color-grey-darkest)]">{label}</p>
             <p className="text-[20px] leading-9 text-[var(--color-black-mid)]">{value}</p>
           </div>
         ))}
         <div className="flex flex-col items-center gap-1 p-4">
-          <p className="font-grotesque text-[16px] font-medium leading-[30px] text-[var(--color-grey-darkest)]">Amount left</p>
+          <p className="whitespace-nowrap font-grotesque text-[16px] font-medium leading-[30px] text-[var(--color-grey-darkest)]">Amount left</p>
           <span className="flex h-8 items-center rounded-[20px] bg-[var(--color-info-bg)] px-4 font-label text-[14px] leading-6 text-[var(--color-primary)]">
             {Math.round(left).toLocaleString('en-IN')} ({100 - pct}%)
           </span>
         </div>
         <div className="flex flex-col items-center gap-2 p-4">
-          <p className="font-grotesque text-[16px] font-medium leading-[30px] text-[var(--color-grey-darkest)]">Progress</p>
+          <p className="whitespace-nowrap font-grotesque text-[16px] font-medium leading-[30px] text-[var(--color-grey-darkest)]">Progress</p>
           <div className="flex w-full items-center gap-1">
             <span className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-[var(--color-white-light)]">
               <span
@@ -706,7 +706,7 @@ export default function Budgets() {
       <FinanceTabs active="Budget" />
       <button
         onClick={() => { setEditing(null); setShowModal(true); }}
-        className="flex h-10 items-center gap-1 rounded-[8px] bg-[var(--color-primary)] pl-2.5 pr-4 text-[14px] leading-6 text-white transition-colors hover:bg-[var(--color-primary-darkest)]"
+        className="flex h-10 shrink-0 items-center gap-1 whitespace-nowrap rounded-[8px] bg-[var(--color-primary)] pl-2.5 pr-4 text-[14px] leading-6 text-white transition-colors hover:bg-[var(--color-primary-darkest)]"
       >
         <Plus className="h-5 w-5" />
         Create Budget
@@ -756,9 +756,9 @@ export default function Budgets() {
             </button>
           </motion.div>
         ) : (
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+          <div className="flex flex-col gap-6 xl:flex-row xl:items-start">
             {/* Left — All Budgets */}
-            <div className="flex w-full flex-col gap-4 rounded-[8px] bg-[var(--color-bg-card)] p-4 shadow-[var(--shadow-drop-low)] lg:w-[476px]">
+            <div className="flex w-full shrink-0 flex-col gap-4 rounded-[8px] bg-[var(--color-bg-card)] p-4 shadow-[var(--shadow-drop-low)] xl:w-[400px]">
               <h3 className="font-heading text-[18px] font-semibold leading-8 text-[var(--color-black-mid)]">All Budgets</h3>
               <div className="flex items-center gap-3">
                 <div className="flex h-10 flex-1 items-center gap-2 rounded-[8px] border border-[var(--color-border-primary)] px-2.5">

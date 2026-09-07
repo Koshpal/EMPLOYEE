@@ -5,6 +5,7 @@ import { SummarySection, DuesReminderCard } from '../../components/dashboard/wid
 import { SUMMARY_STYLES } from '../../components/dashboard/helpers';
 import { IconBell, IconSettings2 } from '../../components/icons/figma';
 import { FinanceTabs } from '../../components/finance/FinanceTabs';
+import { Plus } from 'lucide-react';
 import { getReminders, type Reminder } from '../../services/reminder.service';
 
 const fadeUp = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 } };
@@ -22,6 +23,7 @@ export default function DuesReminders() {
   // and manages its own state.
   const [items, setItems] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [addSignal, setAddSignal] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -51,6 +53,13 @@ export default function DuesReminders() {
   const headerBelow = (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <FinanceTabs active="Dues & Reminders" />
+      <button
+        onClick={() => setAddSignal((n) => n + 1)}
+        className="flex h-10 shrink-0 items-center gap-1 whitespace-nowrap rounded-[8px] bg-[var(--color-primary)] pl-2.5 pr-4 text-[14px] leading-6 text-white transition-colors hover:bg-[var(--color-primary-darkest)]"
+      >
+        <Plus className="h-5 w-5" />
+        Add Reminder
+      </button>
     </div>
   );
 
@@ -68,8 +77,8 @@ export default function DuesReminders() {
           <SummarySection tiles={summaryTiles} loading={loading} />
         </motion.div>
 
-        <motion.div {...fadeUp} transition={{ delay: 0.05 }} className="max-w-2xl">
-          <DuesReminderCard />
+        <motion.div {...fadeUp} transition={{ delay: 0.05 }}>
+          <DuesReminderCard openAddSignal={addSignal} />
         </motion.div>
       </div>
     </Layout>

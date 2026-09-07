@@ -7,6 +7,11 @@ import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { installDevMock } from './mocks/devMock';
+
+// Dev-only: answer REST calls with Figma-shaped fixtures when no backend is
+// reachable. No-op in production builds. See src/mocks/devMock.ts.
+installDevMock();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
