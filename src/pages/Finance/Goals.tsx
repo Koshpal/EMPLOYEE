@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Pencil, Trash2, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Ban } from 'lucide-react';
 import { Layout } from '../../components/common/Layout';
 import { getGoals, createGoal, updateGoal, deleteGoal } from '../../services/finance.service';
 import type { FinancialGoal, CreateGoalPayload } from '../../types/finance.types';
@@ -8,23 +8,16 @@ import { FinanceTabs } from '../../components/finance/FinanceTabs';
 import { SummarySection } from '../../components/dashboard/widgets';
 import { SUMMARY_STYLES, inr } from '../../components/dashboard/helpers';
 import { IconBell, IconSettings2 } from '../../components/icons/figma';
+import { GOAL_ICON_KEYS, GOAL_ICON_LABELS, goalIconFor } from '../../data/financeCategories';
 
 const fadeUp = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 } };
 
-const ICONS = [
-  { emoji: '🎯', label: 'General' },
-  { emoji: '🏠', label: 'House' },
-  { emoji: '🚗', label: 'Car' },
-  { emoji: '✈️', label: 'Travel' },
-  { emoji: '💰', label: 'Savings' },
-  { emoji: '🏦', label: 'Investment' },
-  { emoji: '📱', label: 'Gadget' },
-  { emoji: '🎓', label: 'Education' },
-  { emoji: '💍', label: 'Wedding' },
-  { emoji: '🏖️', label: 'Vacation' },
-  { emoji: '🏋️', label: 'Health' },
-  { emoji: '🎮', label: 'Gaming' },
-];
+/** Renders a goal's `iconResId` (a string key — see financeCategories.ts),
+ *  falling back to the "no icon" glyph for "none" or an unrecognized key. */
+function GoalIcon({ iconResId, className }: { iconResId?: string | null; className?: string }) {
+  const Icon = goalIconFor(iconResId) ?? Ban;
+  return <Icon className={className} />;
+}
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -42,7 +35,10 @@ interface GoalModalProps {
 
 function GoalModal({ goal, onClose, onSave }: GoalModalProps) {
   const [name, setName] = useState(goal?.title ?? '');
-  const [icon, setIcon] = useState(goal?.iconResId ?? '🎯');
+  // "flag" matches the mobile app's own default draft icon (GoalFluxDeck's
+  // `_draftIcon`) — it isn't one of the 29 picker keys, so a new goal starts
+  // with nothing selected in the grid below, same as on mobile.
+  const [icon, setIcon] = useState(goal?.iconResId ?? 'flag');
   const [amount, setAmount] = useState(goal ? String(goal.targetAmount) : '');
   const [saving, setSaving] = useState(goal ? String(goal.savedAmount) : '');
   const [date, setDate] = useState(goal ? goal.goalDate.slice(0, 10) : '');
@@ -101,19 +97,19 @@ function GoalModal({ goal, onClose, onSave }: GoalModalProps) {
           <div>
             <label className="mb-2 block font-label text-[12px] font-medium leading-[22px] text-[var(--color-grey-darkest)]">Icon</label>
             <div className="grid grid-cols-6 gap-2">
-              {ICONS.map((i) => (
+              {GOAL_ICON_KEYS.map((key) => (
                 <button
-                  key={i.emoji}
+                  key={key}
                   type="button"
-                  onClick={() => setIcon(i.emoji)}
-                  title={i.label}
-                  className={`rounded-[12px] border-2 p-2 text-xl transition-all ${
-                    icon === i.emoji
-                      ? 'border-[var(--color-primary)] bg-[var(--color-primary-lightest)]'
-                      : 'border-[var(--color-border-primary)] hover:border-[var(--color-primary-mid)]'
+                  onClick={() => setIcon(key)}
+                  title={GOAL_ICON_LABELS[key] ?? key}
+                  className={`flex items-center justify-center rounded-[12px] border-2 p-2 transition-all ${
+                    icon === key
+                      ? 'border-[var(--color-primary)] bg-[var(--color-primary-lightest)] text-[var(--color-primary)]'
+                      : 'border-[var(--color-border-primary)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary-mid)]'
                   }`}
                 >
-                  {i.emoji}
+                  <GoalIcon iconResId={key} className="h-5 w-5" />
                 </button>
               ))}
             </div>
@@ -200,7 +196,9 @@ function DeleteConfirm({ goal, onCancel, onConfirm }: { goal: FinancialGoal; onC
         exit={{ opacity: 0, scale: 0.96 }}
         className="w-full max-w-sm rounded-[16px] bg-[var(--color-bg-card)] p-6 text-center shadow-[var(--shadow-xl)]"
       >
-        <div className="mb-3 text-4xl">{goal.iconResId}</div>
+        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-[16px] bg-[var(--color-primary-lightest)] text-[var(--color-primary)]">
+          <GoalIcon iconResId={goal.iconResId} className="h-7 w-7" />
+        </div>
         <h3 className="mb-2 font-heading text-[18px] font-semibold leading-8 text-[var(--color-black-mid)]">Delete Goal?</h3>
         <p className="mb-6 text-body-sm text-[var(--color-text-secondary)]">
           “<strong>{goal.title}</strong>” will be permanently deleted.
@@ -368,7 +366,7 @@ export default function Goals() {
                       return (
                         <tr key={g.id} className="group text-body-sm text-[var(--color-black-mid)]">
                           <td className="max-w-[220px] truncate p-2">
-                            <span className="mr-2">{g.iconResId}</span>
+                            <GoalIcon iconResId={g.iconResId} className="mr-2 inline h-4 w-4 -translate-y-px text-[var(--color-text-secondary)]" />
                             {g.title}
                           </td>
                           <td className="whitespace-nowrap p-2 text-center">₹{inr(g.targetAmount)}</td>
