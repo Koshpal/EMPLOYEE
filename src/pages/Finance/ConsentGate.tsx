@@ -11,12 +11,12 @@ export default function ConsentGate() {
   const [consent, setConsent] = useState<FinancialConsent | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ smsSync: false, analytics: false, hrVisible: false, coachVisible: false });
+  const [form, setForm] = useState({ smsSync: true, analytics: false, hrVisible: false, coachVisible: false });
 
   useEffect(() => {
     getConsent().then((c) => {
       setConsent(c);
-      setForm({ smsSync: c.smsSync, analytics: c.analytics, hrVisible: c.hrVisible, coachVisible: c.coachVisible });
+      setForm({ smsSync: true, analytics: c.analytics, hrVisible: c.hrVisible, coachVisible: c.coachVisible });
     }).finally(() => setLoading(false));
   }, []);
 
@@ -42,13 +42,6 @@ export default function ConsentGate() {
   }
 
   const features = [
-    {
-      key: 'smsSync' as const,
-      title: 'SMS Transaction Sync',
-      description: 'Allow the app to read and sync financial SMS messages from your device to auto-import transactions.',
-      required: true,
-      icon: Shield,
-    },
     {
       key: 'analytics' as const,
       title: 'Financial Analytics',
@@ -168,13 +161,13 @@ export default function ConsentGate() {
             onClick={() => setForm({ smsSync: true, analytics: true, hrVisible: false, coachVisible: false })}
             className="text-xs font-semibold text-[var(--color-primary)] hover:underline mb-8"
           >
-            Select recommended (SMS Sync + Analytics)
+            Select recommended (Analytics)
           </button>
 
           {/* Action Buttons */}
           <div className="space-y-3">
             <button
-              disabled={saving || (!form.smsSync && !form.analytics)}
+              disabled={saving || !form.analytics}
               onClick={handleSave}
               className="w-full py-3.5 px-6 rounded-xl bg-[var(--color-primary)] text-white font-bold hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
@@ -186,9 +179,9 @@ export default function ConsentGate() {
                 </>
               )}
             </button>
-            {!saving && !form.smsSync && !form.analytics && (
+            {!saving && !form.analytics && (
               <p className="text-center text-xs text-[var(--color-text-tertiary)]">
-                Turn on SMS Sync or Analytics to continue.
+                Turn on Analytics to continue.
               </p>
             )}
             {consent?.hasConsented && (
