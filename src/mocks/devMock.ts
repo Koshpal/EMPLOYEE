@@ -10,8 +10,8 @@
    with fixtures shaped to mirror the Figma "Financial Dashboard — Employee"
    file. It is imported from `main.tsx` and only activates when:
      • `import.meta.env.DEV` is true, AND
-     • localStorage `koshpal_mock` !== 'off'
-   Toggle it off at runtime with `localStorage.koshpal_mock = 'off'` + reload.
+     • localStorage `koshpal_mock` === 'on'   (opt-in; default is the real backend)
+   Toggle it on at runtime with `localStorage.koshpal_mock = 'on'` + reload.
 =========================================================================== */
 import type { AxiosAdapter, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { axiosInstance } from '../services/api';
@@ -634,11 +634,12 @@ const mockAdapter: AxiosAdapter = async (cfg) => {
 export function installDevMock(): void {
   if (!import.meta.env.DEV) return;
   try {
-    if (localStorage.getItem('koshpal_mock') === 'off') return;
+    // Opt-in only: the portal talks to the real backend unless koshpal_mock === 'on'.
+    if (localStorage.getItem('koshpal_mock') !== 'on') return;
   } catch {
-    /* localStorage unavailable — still mock */
+    return;
   }
   axiosInstance.defaults.adapter = mockAdapter;
   // eslint-disable-next-line no-console
-  console.info('%c[devMock] active — REST calls are answered with Figma-shaped fixtures. localStorage.koshpal_mock="off" to disable.', 'color:#334eac');
+  console.info('%c[devMock] active — REST calls are answered with Figma-shaped fixtures. Remove localStorage.koshpal_mock to disable.', 'color:#334eac');
 }

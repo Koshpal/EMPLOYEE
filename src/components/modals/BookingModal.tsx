@@ -216,7 +216,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
                       <div className="min-w-0">
                         <p className="truncate font-heading text-[16px] font-semibold leading-6 text-[var(--color-black-darkest)]">{coach.fullName}</p>
                         <p className="truncate text-[13px] leading-5 text-[var(--color-grey-darkest)]">
-                          {coach.expertise.slice(0, 2).join(' · ') || 'Certified Financial Coach'}
+                          {coach.expertise.slice(0, 2).join(' · ') || 'Financial Coach'}
                         </p>
                       </div>
                       <span className="flex shrink-0 items-center gap-1 rounded-[52px] bg-[var(--color-bg-tertiary)] px-2 py-0.5">

@@ -43,7 +43,7 @@ export const ConsultationCard: React.FC<ConsultationCardProps> = ({ consultation
           </div>
           <div>
             <h3 className="text-lg font-bold text-[var(--color-text-primary)] font-heading">
-              {consultation.coach?.fullName || 'Expert Coach'}
+              {consultation.coach?.fullName || 'Your coach'}
             </h3>
             <p className="text-sm text-[var(--color-text-secondary)] mb-2">
               {consultation.coach?.expertise?.slice(0, 2).join(', ')}

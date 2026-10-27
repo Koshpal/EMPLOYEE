@@ -97,8 +97,8 @@ const Dashboard: React.FC = () => {
     return [
       {
         label: 'Spendings',
-        value: inr(wellness?.monthlyExpenses ?? 0),
-        suffix: `/ ${inr(wellness?.monthlyIncome ?? 0)}`,
+        value: wellness ? inr(wellness.monthlyExpenses) : '—',
+        suffix: wellness ? `/ ${inr(wellness.monthlyIncome)}` : undefined,
         note: wellness
           ? `${wellness.expenseChange > 0 ? '+' : ''}${wellness.expenseChange}% vs last month`
           : 'This month',
@@ -114,14 +114,14 @@ const Dashboard: React.FC = () => {
       },
       {
         label: 'SESSIONS ATTENDED',
-        value: String(stats?.confirmed ?? 0),
-        note: `${stats?.thisMonth ?? 0} this month`,
+        value: stats ? String(stats.confirmed) : '—',
+        note: stats ? `${stats.thisMonth} this month` : 'Unavailable',
         noteIcon: 'trend' as const,
         ...SUMMARY_STYLES.sessions,
       },
       {
         label: 'SAVINGS',
-        value: inr(wellness?.savings ?? 0),
+        value: wellness ? inr(wellness.savings) : '—',
         note: wellness ? `${wellness.savingsRate}% savings rate` : 'This month',
         noteIcon: 'trend' as const,
         ...SUMMARY_STYLES.savings,

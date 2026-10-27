@@ -143,7 +143,7 @@ export default function FinanceDashboard() {
               : [
               {
                 label: 'Monthly Income',
-                value: formatINR(overview?.monthlyIncome ?? 0),
+                value: (overview ? formatINR(overview.monthlyIncome) : '—'),
                 icon: TrendingUp,
                 color: 'var(--color-success-dark)',
                 bg: 'var(--color-success-bg)',
@@ -151,7 +151,7 @@ export default function FinanceDashboard() {
               },
               {
                 label: 'Monthly Expenses',
-                value: formatINR(overview?.monthlyExpenses ?? 0),
+                value: (overview ? formatINR(overview.monthlyExpenses) : '—'),
                 icon: TrendingDown,
                 color: 'var(--color-error-dark)',
                 bg: 'rgba(245,90,81,0.1)',
@@ -159,7 +159,7 @@ export default function FinanceDashboard() {
               },
               {
                 label: 'Savings',
-                value: formatINR(overview?.savings ?? 0),
+                value: (overview ? formatINR(overview.savings) : '—'),
                 icon: Wallet,
                 color: 'var(--color-primary)',
                 bg: 'var(--color-primary-lightest)',
@@ -167,7 +167,7 @@ export default function FinanceDashboard() {
               },
               {
                 label: 'Subscriptions',
-                value: formatINR(overview?.subscriptionSpend ?? 0),
+                value: (overview ? formatINR(overview.subscriptionSpend) : '—'),
                 icon: Repeat,
                 color: '#3498db',
                 bg: 'rgba(52,152,219,0.1)',
@@ -175,7 +175,7 @@ export default function FinanceDashboard() {
               },
               {
                 label: 'EMI Load',
-                value: formatINR(overview?.emiSpend ?? 0),
+                value: (overview ? formatINR(overview.emiSpend) : '—'),
                 icon: Zap,
                 color: 'var(--color-warning-dark)',
                 bg: 'var(--color-warning-bg)',

@@ -104,10 +104,10 @@ export default function Analytics() {
         ) : (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
-              { label: 'Income', value: analytics?.income ?? 0, color: '#80b597' },
-              { label: 'Expenses', value: analytics?.expenses ?? 0, color: '#f55a51' },
-              { label: 'Savings', value: analytics?.savings ?? 0, color: '#334eac' },
-              { label: 'Savings Rate', value: `${analytics?.savingsRate ?? 0}%`, color: '#f5a038', raw: true },
+              { label: 'Income', value: analytics ? analytics.income : '—', color: '#80b597' },
+              { label: 'Expenses', value: analytics ? analytics.expenses : '—', color: '#f55a51' },
+              { label: 'Savings', value: analytics ? analytics.savings : '—', color: '#334eac' },
+              { label: 'Savings Rate', value: analytics ? `${analytics.savingsRate}%` : '—', color: '#f5a038', raw: true },
             ].map((stat) => (
               <div key={stat.label} className="bg-[var(--color-bg-card)] border border-[var(--color-border-primary)] rounded-2xl p-4">
                 <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-[var(--color-text-secondary)]">
@@ -115,7 +115,7 @@ export default function Analytics() {
                   {stat.label}
                 </p>
                 <p className="text-h4 font-bold tabular-nums text-[var(--color-text-primary)]">
-                  {stat.raw ? stat.value : formatINR(stat.value as number)}
+                  {stat.raw || typeof stat.value === 'string' ? stat.value : formatINR(stat.value)}
                 </p>
               </div>
             ))}

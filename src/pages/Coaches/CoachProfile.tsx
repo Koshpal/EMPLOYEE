@@ -114,7 +114,7 @@ const CoachProfile: React.FC = () => {
                       </span>
                     </div>
                     <p className="text-[20px] leading-9 text-[var(--color-grey-darkest)]">
-                      {coach?.expertise?.slice(0, 2).join(' · ') || 'Certified Financial Coach'}
+                      {coach?.expertise?.slice(0, 2).join(' · ') || 'Financial Coach'}
                     </p>
                     <div className="flex flex-wrap items-center gap-2.5">
                       {(coach?.expertise ?? []).slice(0, 3).map((e) => (
@@ -133,15 +133,19 @@ const CoachProfile: React.FC = () => {
               <div className="flex flex-col gap-[18px]">
                 <Section title="About coach" body={coach?.bio || 'This coach has not added a bio yet.'} />
                 <Section
-                  title="Education"
-                  body={coach?.languages?.length ? `Speaks ${coach.languages.join(', ')}` : 'Details coming soon.'}
+                  title="Languages"
+                  body={coach?.languages?.length ? coach.languages.join(', ') : 'Not provided.'}
                 />
                 <Section
                   title="Highlights"
                   body={
-                    coach
-                      ? `${coach.clientsHelped}+ clients helped with a ${coach.successRate}% success rate. ${coach.totalFeedback} reviews.`
-                      : ''
+                    coach && (coach.clientsHelped > 0 || coach.totalFeedback > 0)
+                      ? [
+                          coach.clientsHelped > 0 ? `${coach.clientsHelped}+ clients helped` : null,
+                          coach.successRate > 0 ? `${coach.successRate}% success rate` : null,
+                          coach.totalFeedback > 0 ? `${coach.totalFeedback} review${coach.totalFeedback === 1 ? '' : 's'}` : null,
+                        ].filter(Boolean).join(' · ')
+                      : 'No reviews yet.'
                   }
                 />
               </div>

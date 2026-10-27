@@ -39,7 +39,7 @@ export const CoachCard: React.FC<CoachCardProps> = ({ coach, onBook, availabilit
   const subtitle =
     coach.successRate > 0
       ? `${coach.successRate}% success · ${coach.clientsHelped}+ helped`
-      : coach.expertise.slice(0, 2).join(' · ') || 'Certified Financial Coach';
+      : coach.expertise.slice(0, 2).join(' · ') || 'Financial Coach';
 
   const nextSlot = availability?.nextSlot ?? null;
   const dayLabels = Array.from(

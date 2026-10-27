@@ -49,7 +49,7 @@ export const YourSessionCard: React.FC<YourSessionCardProps> = ({ session }) => 
           </div>
           <div>
             <h3 className="text-xl font-bold text-[var(--color-text-primary)] font-heading">
-              Session with {session.coach?.fullName || 'Expert Coach'}
+              Session with {session.coach?.fullName || 'your coach'}
             </h3>
             <div className="flex flex-wrap items-center gap-3 mt-1">
               <div className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)]">
