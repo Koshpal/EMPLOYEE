@@ -7,7 +7,7 @@ import type { FinancialGoal, CreateGoalPayload } from '../../types/finance.types
 import { FinanceTabs } from '../../components/finance/FinanceTabs';
 import { SummarySection } from '../../components/dashboard/widgets';
 import { SUMMARY_STYLES, inr } from '../../components/dashboard/helpers';
-import { IconBell, IconSettings2 } from '../../components/icons/figma';
+import { HeaderSettingsButton } from '../../components/common/HeaderSettingsButton';
 import { GOAL_ICON_KEYS, GOAL_ICON_LABELS, goalIconFor } from '../../data/financeCategories';
 
 const fadeUp = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 } };
@@ -285,13 +285,10 @@ export default function Goals() {
     { label: 'TOTAL SAVED', value: `₹${inr(stats.totalSaved)}`, note: 'Across all goals', noteIcon: 'trend' as const, ...SUMMARY_STYLES.savings },
   ];
 
-  const iconBtn =
-    'flex h-10 items-center justify-center rounded-[8px] border border-[var(--color-border-primary)] px-2.5 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)] transition-colors';
 
   const headerActions = (
     <>
-      <button className={iconBtn} aria-label="Notifications"><IconBell size={20} /></button>
-      <button className={iconBtn} aria-label="Settings"><IconSettings2 size={20} /></button>
+      <HeaderSettingsButton />
     </>
   );
 
@@ -335,7 +332,7 @@ export default function Goals() {
             ) : goals.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
                 <div className="mb-1 flex h-16 w-16 items-center justify-center rounded-[20px] bg-[var(--color-primary-lightest)] text-3xl">🎯</div>
-                <p className="font-label text-[16px] font-medium leading-7 text-[var(--color-neutral-600)]">No goals yet</p>
+                <p className="font-label text-[16px] font-medium leading-7 text-[var(--color-text-secondary)]">No goals yet</p>
                 <p className="max-w-xs text-body-sm text-[var(--color-grey-darkest)]">
                   Set financial goals to track your savings progress and stay motivated.
                 </p>
@@ -380,23 +377,23 @@ export default function Goals() {
                                   style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
                                 />
                               </span>
-                              <span className="font-label text-[12px] font-medium leading-[22px] text-[var(--color-neutral-600)]">
+                              <span className="font-label text-[12px] font-medium leading-[22px] text-[var(--color-text-secondary)]">
                                 {Math.round(progress)}%
                               </span>
                             </div>
                           </td>
                           <td className="p-2">
-                            <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                            <div className="flex items-center justify-end gap-1 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
                               <button
                                 onClick={() => { setEditGoal(g); setShowModal(true); }}
-                                className="rounded-[6px] p-1.5 text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-primary-lightest)] hover:text-[var(--color-primary)]"
+                                className="rounded-[6px] p-2.5 text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-primary-lightest)] hover:text-[var(--color-primary)]"
                                 aria-label="Edit goal"
                               >
                                 <Pencil className="h-3.5 w-3.5" />
                               </button>
                               <button
                                 onClick={() => setDeleteGoal(g)}
-                                className="rounded-[6px] p-1.5 text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-error-bg)] hover:text-[var(--color-error-dark)]"
+                                className="rounded-[6px] p-2.5 text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-error-bg)] hover:text-[var(--color-error-dark)]"
                                 aria-label="Delete goal"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />

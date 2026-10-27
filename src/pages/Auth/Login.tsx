@@ -31,8 +31,9 @@ const Login: React.FC = () => {
     try {
       await login({ email: email.trim().toLowerCase(), password });
       navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Invalid email or password');
+    } catch (err) {
+      const msg = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+      setError(msg || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
@@ -64,20 +65,22 @@ const Login: React.FC = () => {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
-            <div className="p-3 text-sm rounded-lg bg-(--color-error)/10 text-(--color-error) border border-(--color-error)/20 animate-shake flex items-center gap-2">
+            <div role="alert" className="p-3 text-sm rounded-lg bg-(--color-error)/10 text-(--color-error) border border-(--color-error)/20 animate-shake flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-semibold mb-2 text-(--color-text-primary)">
+            <label htmlFor="login-email" className="block text-sm font-semibold mb-2 text-(--color-text-primary)">
               Work Email
             </label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-(--color-text-tertiary)" />
               <input
+                id="login-email"
                 type="email"
+                autoComplete="username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@company.com"
@@ -89,7 +92,7 @@ const Login: React.FC = () => {
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-semibold text-(--color-text-primary)">
+              <label htmlFor="login-password" className="text-sm font-semibold text-(--color-text-primary)">
                 Password
               </label>
               <Link
@@ -102,7 +105,9 @@ const Login: React.FC = () => {
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-(--color-text-tertiary)" />
               <input
+                id="login-password"
                 type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"

@@ -99,21 +99,21 @@
   /* ── Semantic — Green ────────────────────────────────────────────────── */
   --color-success: #4caf50;         /* Semantic/success/500 */
   --color-success-light: #a5d6a7;
-  --color-success-dark: #43a047;
+  --color-success-dark: #2e7d32;  /* darkened for AA text on white */
   --color-success-darkest: #1b3d1c; /* Semantic/success/900 */
   --color-success-bg: #eefeee;      /* Semantic/success/50 */
 
   /* ── Semantic — Orange ──────────────────────────────────────────────── */
   --color-warning: #ff9800;          /* Semantic/warning/500 */
   --color-warning-light: #ffcc80;
-  --color-warning-dark: #f57c00;
+  --color-warning-dark: #b45309;  /* darkened for AA text on white */
   --color-warning-darkest: #5c3700;  /* Semantic/warning/900 */
   --color-warning-bg: #fff9ef;       /* Semantic/warning/50 */
 
   /* ── Semantic — Red ─────────────────────────────────────────────────── */
   --color-error: #f44336;            /* Semantic/error/500 */
   --color-error-light: #ef9a9a;
-  --color-error-dark: #e53935;
+  --color-error-dark: #c62828;    /* darkened for AA text on white */
   --color-error-bg: #fdecea;
 
   --color-info: #334eac;
@@ -142,7 +142,7 @@
   /* ── Text — Light ──────────────────────────────────────────────────── */
   --color-text-primary: #181818;   /* Neutral/900 */
   --color-text-secondary: #5e5e5e; /* Neutral/600 */
-  --color-text-tertiary: #919191;  /* Neutral/400 */
+  --color-text-tertiary: #6b6b6b;  /* Neutral/500 — darkened from #919191 for WCAG AA (≥4.5:1 on white/canvas) */
   --color-text-inverse: #ffffff;
 
   /* ── Border — Light ────────────────────────────────────────────────── */
@@ -279,6 +279,12 @@
   --color-info-bg: rgba(126, 168, 248, 0.14);
 
   --color-overlay: rgba(0, 0, 0, 0.6);
+
+  /* Dark shades used for text on tinted tiles must flip to light shades on dark surfaces. */
+  --color-success-900: #a5d6a7;
+  --color-warning-900: #ffcc80;
+  --color-primary-800: #bcd2fb;
+  --color-secondary-800: #8ee9f3;
 
   --color-calendar-today-bg: rgba(126, 168, 248, 0.06);
   --color-calendar-confirmed-bg: rgba(126, 168, 248, 0.25);
@@ -476,3 +482,22 @@ button {
 /* Thin scrollbars for internal scroll areas */
 .scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+
+/* ── Accessibility ─────────────────────────────────────────────────────── */
+/* One visible keyboard focus ring for every interactive element (inputs keep their own ring styles). */
+:where(a, button, [role='button'], [role='tab'], [role='switch'], summary):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* In dark mode --color-primary is a light blue (good for links/icons on dark surfaces) but white text on it is
+   only ~2.4:1. Filled primary surfaces use the dark inverse text instead; hover goes to the dark navy fill. */
+[data-theme='dark'] .bg-\[var\(--color-primary\)\],
+[data-theme='dark'] .bg-\(--color-primary\) {
+  color: var(--color-text-inverse);
+}
+[data-theme='dark'] .bg-\[var\(--color-primary\)\]:hover,
+[data-theme='dark'] .bg-\(--color-primary\):hover {
+  color: #ffffff;
+}

@@ -54,11 +54,10 @@ interface TransactionItemProps {
 }
 
 function formatAmount(amount: number): string {
-  // Render the magnitude only — the +/- sign is added by the caller from `type`.
+  // Render the exact magnitude (no K/L abbreviation, paise kept) — the +/- sign is added by the caller from `type`.
   const n = Math.abs(Number.isFinite(amount) ? amount : 0);
-  if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`;
-  if (n >= 1000) return `₹${(n / 1000).toFixed(1)}K`;
-  return `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+  const whole = Math.abs(n - Math.round(n)) < 0.005;
+  return `₹${n.toLocaleString('en-IN', whole ? { maximumFractionDigits: 0 } : { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function formatDate(dateStr: string): string {
@@ -83,23 +82,22 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, s
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-[var(--color-text-primary)] truncate max-w-[160px]">
+        <div className="flex items-center justify-between gap-2">
+          <p className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--color-text-primary)]">
             {transaction.senderName || transaction.receiverName || transaction.description || transaction.category}
           </p>
-          <span className={`text-sm font-bold tabular-nums ${isCredit ? 'text-[var(--color-success-dark)]' : 'text-[var(--color-text-primary)]'}`}>
+          <span className={`shrink-0 text-sm font-bold tabular-nums ${isCredit ? 'text-[var(--color-success-dark)]' : 'text-[var(--color-text-primary)]'}`}>
+            <span className="sr-only">{isCredit ? 'Credit ' : 'Debit '}</span>
             {isCredit ? '+' : '-'}{formatAmount(Number(transaction.amount))}
           </span>
         </div>
         <div className="flex items-center gap-2 mt-0.5">
-          <span
-            className="text-xs px-1.5 py-0.5 rounded-full font-medium"
-            style={{ backgroundColor: `${color}18`, color }}
-          >
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-bg-tertiary)] px-2 py-0.5 text-xs font-medium text-[var(--color-text-secondary)]">
+            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
             {transaction.category}
           </span>
           {transaction.isSalary && (
-            <span className="text-xs px-1.5 py-0.5 rounded-full bg-[var(--color-success-bg)] text-[var(--color-success-dark)] font-medium">
+            <span className="text-xs px-1.5 py-0.5 rounded-full bg-[var(--color-success-bg)] text-[var(--color-success-darkest)] font-medium">
               Salary
             </span>
           )}

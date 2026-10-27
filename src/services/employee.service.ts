@@ -13,6 +13,11 @@ export interface ActivationStatus {
   steps: { key: ActivationStepKey; done: boolean }[];
 }
 
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
 export const employeeService = {
   getActivation: async (): Promise<ActivationStatus> => {
     const response = await axiosInstance.get('/employee/activation');
@@ -24,7 +29,7 @@ export const employeeService = {
     return response.data;
   },
 
-  login: async (credentials: any): Promise<AuthResponse> => {
+  login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     const response = await axiosInstance.post('/auth/login', credentials);
     return response.data;
   },

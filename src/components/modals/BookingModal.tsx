@@ -4,6 +4,7 @@ import type { Coach, Slot } from '../../types/booking.types';
 import { Button } from '../ui/Button';
 import { coachService } from '../../services/coach.service';
 import { formatDateLocal, isPastLocal } from '../../utils/date';
+import { apiErrorMessage } from '../../utils/apiError';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -62,7 +63,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
       const availability = await coachService.getSlotAvailabilityRange(startDate, endDate, coach.id);
       const dates = new Set<string>(
         Object.entries(availability || {})
-          .filter(([_, data]: any) => data && data.hasSlots)
+          .filter(([, data]) => (data as { hasSlots?: boolean } | null)?.hasSlots)
           .map(([date]) => date)
       );
       setDatesWithSlots(dates);
@@ -78,10 +79,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
       const dateStr = formatDateLocal(selectedDate);
       const response = await coachService.getCoachSlots(coach.id, dateStr);
 
-      const slotsArray = Array.isArray(response) ? response : (response as any)?.slots || [];
+      const slotsArray = Array.isArray(response) ? response : (response as { slots?: Slot[] } | null)?.slots || [];
 
       if (Array.isArray(slotsArray)) {
-        setAvailableSlots(slotsArray.filter((s: any) =>
+        setAvailableSlots(slotsArray.filter((s: Omit<Slot, 'status'> & { status?: string; isAvailable?: boolean }) =>
           s.status === 'AVAILABLE' ||
           s.status === 'available' ||
           s.isAvailable === true ||
@@ -114,12 +115,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
         fetchSlotsForDate();
       }
       onSuccess();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Booking failed:', error);
       if (selectedDate) {
         await fetchSlotsForDate();
       }
-      setBookingError(error?.response?.data?.message || 'Failed to book session. Please try again.');
+      setBookingError(apiErrorMessage(error, 'Failed to book session. Please try again.'));
     } finally {
       setBookingLoading(false);
     }
@@ -173,6 +174,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
     return days;
   };
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
+
   if (!isOpen || !coach) return null;
 
   const steps = ['Date', 'Time', 'Review'] as const;
@@ -180,12 +188,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md animate-fade-in" onClick={onClose}>
-      <div className="w-full max-w-4xl overflow-hidden rounded-[12px] border border-[var(--color-border-primary)] bg-[var(--color-bg-card)] shadow-2xl animate-slide-up" onClick={(e) => e.stopPropagation()}>
+      <div role="dialog" aria-modal="true" aria-labelledby="booking-modal-title" className="w-full max-w-4xl overflow-hidden rounded-[12px] border border-[var(--color-border-primary)] bg-[var(--color-bg-card)] shadow-2xl animate-slide-up" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-[var(--color-border-primary)] p-4">
-          <h2 className="font-heading text-[24px] font-semibold leading-[44px] text-[var(--color-black-mid)]">
+          <h2 id="booking-modal-title" className="font-heading text-[24px] font-semibold leading-[44px] text-[var(--color-black-mid)]">
             {currentStep === 3 ? 'Session Booked' : 'Session Booking'}
           </h2>
-          <button onClick={onClose} className="rounded-[8px] p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)]">
+          <button onClick={onClose} aria-label="Close" className="rounded-[8px] p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)]">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -206,7 +214,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
                   <div className="flex min-w-0 flex-1 flex-col gap-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="truncate font-heading text-[16px] font-semibold leading-6 text-black">{coach.fullName}</p>
+                        <p className="truncate font-heading text-[16px] font-semibold leading-6 text-[var(--color-black-darkest)]">{coach.fullName}</p>
                         <p className="truncate text-[13px] leading-5 text-[var(--color-grey-darkest)]">
                           {coach.expertise.slice(0, 2).join(' · ') || 'Certified Financial Coach'}
                         </p>
@@ -219,7 +227,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {coach.expertise.slice(0, 3).map((e) => (
-                        <span key={e} className="rounded-[20px] bg-[var(--color-secondary-lightest)] px-2 py-0.5 text-[11px] leading-5 text-[var(--color-secondary-mid)]">{e}</span>
+                        <span key={e} className="rounded-[20px] bg-[var(--color-secondary-lightest)] px-2 py-0.5 text-[11px] leading-5 text-[var(--color-secondary-800)]">{e}</span>
                       ))}
                     </div>
                   </div>
@@ -406,7 +414,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
 
           {currentStep === 3 && (
             <div className="py-8 text-center space-y-6">
-              <div className="w-24 h-24 bg-[var(--color-success-bg)] text-[var(--color-success-dark)] rounded-full flex items-center justify-center mx-auto mb-6 scale-110 animate-bounce">
+              <div className="w-24 h-24 bg-[var(--color-success-bg)] text-[var(--color-success-dark)] rounded-full flex items-center justify-center mx-auto mb-6 scale-110">
                 <Check className="w-12 h-12" strokeWidth={3} />
               </div>
               <h2 className="text-3xl font-bold text-[var(--color-text-primary)] font-heading">You're all set!</h2>

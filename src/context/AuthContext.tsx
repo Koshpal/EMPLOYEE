@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { AuthResponse } from '../types/employee.types';
-import { employeeService } from '../services/employee.service';
+import { employeeService, type LoginCredentials } from '../services/employee.service';
 
 interface AuthContextType {
   user: AuthResponse['user'] | null;
   loading: boolean;
-  login: (credentials: any) => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -35,7 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // the browser sends it automatically (withCredentials: true).
       try {
         const me = await employeeService.getCurrentUser();
-        if (me && (me as any).role === 'EMPLOYEE') {
+        if (me && (me as { role?: string }).role === 'EMPLOYEE') {
           setUser(me);
           localStorage.setItem('user', JSON.stringify(me));
         }
@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     void initAuth();
   }, []);
 
-  const login = async (credentials: any) => {
+  const login = async (credentials: LoginCredentials) => {
     const response = await employeeService.login(credentials);
     // Hydrate from /auth/me so `user` has the same shape everywhere (name,
     // phone, isActive) instead of the leaner login-response shape.

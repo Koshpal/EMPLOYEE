@@ -3,6 +3,7 @@ import { Lock, Eye, EyeOff, ArrowLeft, Mail, KeyRound, CheckCircle2 } from 'luci
 import { Link, useNavigate } from 'react-router-dom';
 import { employeeService } from '../../services/employee.service';
 import { Button } from '../../components/ui/Button';
+import { apiErrorMessage } from '../../utils/apiError';
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -31,8 +32,8 @@ const ForgotPassword = () => {
       await employeeService.forgotPassword(email.trim().toLowerCase());
       setSuccess('OTP has been sent to your email');
       setStep('otp');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to send OTP.');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Failed to send OTP.'));
     } finally {
       setLoading(false);
     }
@@ -56,8 +57,8 @@ const ForgotPassword = () => {
       // Normalize identically to handleRequestOtp so the OTP lookup matches.
       const res = await employeeService.verifyOtp(email.trim().toLowerCase(), otp);
       tempToken = res.tempToken;
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'That code is invalid or has expired.');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'That code is invalid or has expired.'));
       setLoading(false);
       return;
     }
@@ -65,8 +66,8 @@ const ForgotPassword = () => {
       await employeeService.resetPassword(tempToken, newPassword);
       setSuccess('Password reset successful! Redirecting to login...');
       setTimeout(() => navigate('/login'), 2000);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Could not reset your password. Please try again.');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Could not reset your password. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -109,10 +110,11 @@ const ForgotPassword = () => {
         {step === 'email' ? (
           <form onSubmit={handleRequestOtp} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-(--color-text-primary) ml-1">Work Email</label>
+              <label htmlFor="fp-email" className="text-sm font-bold text-(--color-text-primary) ml-1">Work Email</label>
               <div className="relative group">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-(--color-text-tertiary) group-focus-within:text-(--color-primary) transition-colors" />
                 <input
+                  id="fp-email" autoComplete="username"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -135,10 +137,11 @@ const ForgotPassword = () => {
         ) : (
           <form onSubmit={handleResetPassword} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-(--color-text-primary) ml-1">6-Digit OTP</label>
+              <label htmlFor="fp-otp" className="text-sm font-bold text-(--color-text-primary) ml-1">6-Digit OTP</label>
               <div className="relative group">
                 <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-(--color-text-tertiary) group-focus-within:text-(--color-primary) transition-colors" />
                 <input
+                  id="fp-otp" autoComplete="one-time-code" inputMode="numeric"
                   type="text"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
@@ -152,11 +155,12 @@ const ForgotPassword = () => {
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-bold text-(--color-text-primary) ml-1">New Password</label>
+                <label htmlFor="fp-new" className="text-sm font-bold text-(--color-text-primary) ml-1">New Password</label>
                 <div className="relative group">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-(--color-text-tertiary) group-focus-within:text-(--color-primary) transition-colors" />
                   <input
-                    type={showNewPassword ? 'text' : 'password'}
+                    id="fp-new" autoComplete="new-password"
+                  type={showNewPassword ? 'text' : 'password'}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Min. 8 characters"
@@ -176,11 +180,12 @@ const ForgotPassword = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-(--color-text-primary) ml-1">Confirm Password</label>
+                <label htmlFor="fp-confirm" className="text-sm font-bold text-(--color-text-primary) ml-1">Confirm Password</label>
                 <div className="relative group">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-(--color-text-tertiary) group-focus-within:text-(--color-primary) transition-colors" />
                   <input
-                    type={showConfirmPassword ? 'text' : 'password'}
+                    id="fp-confirm" autoComplete="new-password"
+                  type={showConfirmPassword ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Repeat your new password"

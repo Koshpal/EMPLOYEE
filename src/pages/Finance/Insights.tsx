@@ -47,7 +47,7 @@ export default function Insights() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-h3 text-[var(--color-text-primary)]">Smart Insights</h1>
+            <h2 className="text-h3 text-[var(--color-text-primary)]">Smart Insights</h2>
             {unreadCount > 0 && (
               <p className="text-xs text-[var(--color-primary)] font-medium mt-0.5">{unreadCount} unread</p>
             )}

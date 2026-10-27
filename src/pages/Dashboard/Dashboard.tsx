@@ -107,8 +107,8 @@ const Dashboard: React.FC = () => {
       },
       {
         label: 'BUDGET',
-        value: inr(totalBudgeted),
-        note: budgets.length ? `Across ${budgets.length} budget${budgets.length > 1 ? 's' : ''}` : 'Similar to last month',
+        value: budgets.length ? inr(totalBudgeted) : '—',
+        note: budgets.length ? `Across ${budgets.length} budget${budgets.length > 1 ? 's' : ''}` : 'No budget set yet',
         noteIcon: 'same' as const,
         ...SUMMARY_STYLES.budget,
       },

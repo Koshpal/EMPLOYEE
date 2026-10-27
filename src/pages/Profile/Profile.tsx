@@ -36,6 +36,7 @@ const Profile: React.FC = () => {
     phone: '',
   });
   const [phoneError, setPhoneError] = useState('');
+  const [nameError, setNameError] = useState('');
 
   useEffect(() => {
     fetchProfile();
@@ -122,6 +123,18 @@ const Profile: React.FC = () => {
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    const trimmedName = formData.name.trim();
+    if (!trimmedName) {
+      setNameError('Please enter your name.');
+      setMessage({ text: 'Please enter your name before saving.', type: 'error' });
+      return;
+    }
+    if (trimmedName.length > 100) {
+      setNameError('Name must be 100 characters or fewer.');
+      setMessage({ text: 'Please shorten your name before saving.', type: 'error' });
+      return;
+    }
+    setNameError('');
     if (phoneError) {
       setMessage({ text: 'Please fix the phone number before saving.', type: 'error' });
       return;
@@ -135,12 +148,12 @@ const Profile: React.FC = () => {
     setMessage(null);
     try {
       const fd = new FormData();
-      fd.append('name', formData.name);
+      fd.append('name', trimmedName);
       fd.append('phone', formData.phone);
       await employeeService.updateProfile(fd);
-      setProfile((prev) => prev ? { ...prev, name: formData.name, phone: formData.phone } : prev);
+      setProfile((prev) => prev ? { ...prev, name: trimmedName, phone: formData.phone } : prev);
       setMessage({ text: 'Profile updated successfully!', type: 'success' });
-    } catch (error) {
+    } catch {
       setMessage({ text: 'Failed to update profile.', type: 'error' });
     } finally {
       setSaving(false);
@@ -187,6 +200,7 @@ const Profile: React.FC = () => {
                 <button
                   type="button"
                   disabled={photoUploading}
+                  aria-label="Change profile photo"
                   onClick={() => photoInputRef.current?.click()}
                   className="absolute bottom-2 right-2 p-2 bg-[var(--color-primary)] text-white rounded-xl shadow-lg hover:scale-110 transition-all disabled:opacity-50"
                 >
@@ -194,9 +208,9 @@ const Profile: React.FC = () => {
                 </button>
               </div>
               <div className="flex-1 mb-2">
-                <h1 className="text-3xl font-bold text-[var(--color-text-primary)] font-heading">
+                <h2 className="text-3xl font-bold text-[var(--color-text-primary)] font-heading">
                   {profile?.name}
-                </h1>
+                </h2>
                 <p className="text-[var(--color-text-secondary)] font-medium">Employee @ Koshpal</p>
               </div>
               <div className="mb-2">
@@ -229,22 +243,28 @@ const Profile: React.FC = () => {
               <form onSubmit={handleUpdateProfile} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-bold text-[var(--color-text-primary)] mb-2">Full Name</label>
+                    <label htmlFor="pf-name" className="block text-sm font-bold text-[var(--color-text-primary)] mb-2">Full Name</label>
                     <div className="relative">
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
                       <input 
+id="pf-name"
                         type="text" 
                         value={formData.name}
-                        onChange={e => setFormData({ ...formData, name: e.target.value })}
+                        onChange={e => { setFormData({ ...formData, name: e.target.value }); setNameError(''); }}
+                        aria-invalid={!!nameError}
+                        aria-describedby={nameError ? 'pf-name-err' : undefined}
+                        maxLength={120}
                         className="w-full pl-11 pr-4 py-3 rounded-2xl bg-[var(--color-bg-tertiary)] border border-[var(--color-border-primary)] outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all"
                       />
                     </div>
+                    {nameError && <p id="pf-name-err" role="alert" className="mt-1.5 text-xs text-[var(--color-error)]">{nameError}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-[var(--color-text-primary)] mb-2">Phone Number</label>
+                    <label htmlFor="pf-phone" className="block text-sm font-bold text-[var(--color-text-primary)] mb-2">Phone Number</label>
                     <div className="relative">
                       <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
                       <input
+id="pf-phone"
                         type="tel"
                         value={formData.phone}
                         onChange={handlePhoneChange}
@@ -260,10 +280,11 @@ const Profile: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-[var(--color-text-primary)] mb-2">Email Address</label>
+                  <label htmlFor="pf-email" className="block text-sm font-bold text-[var(--color-text-primary)] mb-2">Email Address</label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]" />
                     <input 
+id="pf-email"
                       type="email" 
                       value={profile?.email ?? ''}
                       disabled
@@ -303,6 +324,9 @@ const Profile: React.FC = () => {
                   </div>
                   <button
                     onClick={toggleTheme}
+                    role="switch"
+                    aria-checked={theme === 'dark'}
+                    aria-label="Dark mode"
                     className={`relative w-12 h-6 rounded-full transition-all ${theme === 'dark' ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-grey-lightest)]'}`}
                   >
                     <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${theme === 'dark' ? 'left-7' : 'left-1'}`} />
@@ -334,7 +358,7 @@ const Profile: React.FC = () => {
               <button
                 type="button"
                 onClick={() => logout()}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border border-[var(--color-error)]/30 text-[var(--color-error)] font-bold hover:bg-[var(--color-error)]/10 transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border border-[var(--color-error)]/30 text-[var(--color-error-dark)] font-bold hover:bg-[var(--color-error)]/10 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
                 Log out
@@ -358,9 +382,10 @@ const Profile: React.FC = () => {
             </div>
             <form onSubmit={handleChangePassword} className="space-y-5">
               <div>
-                <label className="block text-sm font-bold text-[var(--color-text-primary)] mb-2">Current Password</label>
+                <label htmlFor="pf-cur" className="block text-sm font-bold text-[var(--color-text-primary)] mb-2">Current Password</label>
                 <div className="relative">
                   <input
+id="pf-cur"
                     type={showCurrent ? 'text' : 'password'}
                     value={pwForm.current}
                     onChange={e => setPwForm(f => ({ ...f, current: e.target.value }))}
@@ -373,9 +398,10 @@ const Profile: React.FC = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-bold text-[var(--color-text-primary)] mb-2">New Password</label>
+                <label htmlFor="pf-new" className="block text-sm font-bold text-[var(--color-text-primary)] mb-2">New Password</label>
                 <div className="relative">
                   <input
+id="pf-new"
                     type={showNext ? 'text' : 'password'}
                     value={pwForm.next}
                     onChange={e => setPwForm(f => ({ ...f, next: e.target.value }))}
@@ -389,8 +415,9 @@ const Profile: React.FC = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-bold text-[var(--color-text-primary)] mb-2">Confirm New Password</label>
+                <label htmlFor="pf-conf" className="block text-sm font-bold text-[var(--color-text-primary)] mb-2">Confirm New Password</label>
                 <input
+id="pf-conf"
                   type="password"
                   value={pwForm.confirm}
                   onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))}

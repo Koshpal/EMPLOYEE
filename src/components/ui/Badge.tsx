@@ -29,7 +29,7 @@ export const Badge: React.FC<BadgeProps> = ({
 }) => {
   const fills = {
     primary: 'bg-[var(--color-primary-lightest)] text-[var(--color-primary)]',
-    secondary: 'bg-[var(--color-secondary-lightest)] text-[var(--color-secondary-mid)]',
+    secondary: 'bg-[var(--color-secondary-lightest)] text-[var(--color-secondary-800)]',
     success: 'bg-[var(--color-success-bg)] text-[var(--color-success-dark)]',
     warning: 'bg-[var(--color-warning-bg)] text-[var(--color-warning-darkest)]',
     error: 'bg-[var(--color-error-bg)] text-[var(--color-error-dark)]',
@@ -38,7 +38,7 @@ export const Badge: React.FC<BadgeProps> = ({
   };
   const outlines = {
     primary: 'border border-[var(--color-primary)] text-[var(--color-primary)]',
-    secondary: 'border border-[var(--color-secondary-mid)] text-[var(--color-secondary-mid)]',
+    secondary: 'border border-[var(--color-secondary-mid)] text-[var(--color-secondary-800)]',
     success: 'border border-[var(--color-success)] text-[var(--color-success-dark)]',
     warning: 'border border-[var(--color-warning)] text-[var(--color-warning-darkest)]',
     error: 'border border-[var(--color-error)] text-[var(--color-error-dark)]',

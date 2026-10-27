@@ -168,7 +168,7 @@ export default function MoneyCheckIn() {
   );
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--color-bg-secondary)] p-4">
+    <main className="flex min-h-screen items-center justify-center bg-[var(--color-bg-secondary)] p-4">
       <div className="w-full max-w-lg rounded-3xl border border-[var(--color-border-primary)] bg-[var(--color-bg-card)] p-8 shadow-xl">
         {/* header */}
         <div className="mb-6 flex items-center gap-2">
@@ -241,7 +241,7 @@ export default function MoneyCheckIn() {
         <div className="mt-8 flex items-center justify-between">
           <button
             onClick={() => (step === 0 ? navigate('/dashboard') : setStep((s) => s - 1))}
-            className="flex items-center gap-1.5 text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+            className="flex min-h-10 items-center gap-1.5 text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
           >
             <ArrowLeft className="h-4 w-4" />
             {step === 0 ? 'Skip for now' : 'Back'}
@@ -256,6 +256,6 @@ export default function MoneyCheckIn() {
           </button>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

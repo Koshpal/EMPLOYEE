@@ -80,15 +80,15 @@ export default function Analytics() {
       <div className="max-w-5xl mx-auto space-y-6 pb-8">
         {/* Header with month selector */}
         <div className="flex items-center justify-between">
-          <h1 className="text-h3 text-[var(--color-text-primary)]">Analytics</h1>
+          <h2 className="text-h3 text-[var(--color-text-primary)]">Analytics</h2>
           <div className="flex items-center gap-1 bg-[var(--color-bg-card)] border border-[var(--color-border-primary)] rounded-xl p-1">
-            <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-[var(--color-bg-tertiary)] transition-colors">
+            <button onClick={prevMonth} aria-label="Previous month" className="p-2.5 rounded-lg hover:bg-[var(--color-bg-tertiary)] transition-colors">
               <ChevronLeft className="w-4 h-4 text-[var(--color-text-secondary)]" />
             </button>
             <span className="text-sm font-bold text-[var(--color-text-primary)] px-2 min-w-[90px] text-center">
               {MONTHS[selectedMonth - 1]} {selectedYear}
             </span>
-            <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-[var(--color-bg-tertiary)] transition-colors">
+            <button onClick={nextMonth} aria-label="Next month" className="p-2.5 rounded-lg hover:bg-[var(--color-bg-tertiary)] transition-colors">
               <ChevronRight className="w-4 h-4 text-[var(--color-text-secondary)]" />
             </button>
           </div>
@@ -110,8 +110,11 @@ export default function Analytics() {
               { label: 'Savings Rate', value: `${analytics?.savingsRate ?? 0}%`, color: '#f5a038', raw: true },
             ].map((stat) => (
               <div key={stat.label} className="bg-[var(--color-bg-card)] border border-[var(--color-border-primary)] rounded-2xl p-4">
-                <p className="text-xs text-[var(--color-text-secondary)] font-medium mb-2">{stat.label}</p>
-                <p className="text-h4 font-bold tabular-nums" style={{ color: stat.color }}>
+                <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-[var(--color-text-secondary)]">
+                  <span aria-hidden="true" className="h-2 w-2 rounded-full" style={{ backgroundColor: stat.color }} />
+                  {stat.label}
+                </p>
+                <p className="text-h4 font-bold tabular-nums text-[var(--color-text-primary)]">
                   {stat.raw ? stat.value : formatINR(stat.value as number)}
                 </p>
               </div>

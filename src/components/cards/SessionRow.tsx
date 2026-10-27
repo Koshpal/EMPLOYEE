@@ -5,7 +5,6 @@ import { IconClock, IconCalendarCheck, IconArrowUpRight } from '../icons/figma';
 interface SessionRowProps {
   session: Consultation;
   showJoin?: boolean;
-  onReschedule?: (s: Consultation) => void;
   onCancel?: (s: Consultation) => void;
   onDetails?: (s: Consultation) => void;
   onJoin?: (s: Consultation) => void;
@@ -28,7 +27,7 @@ function timeRange(start: string, end?: string) {
 /** Figma session-list row (Components 5/6/7) — date chip, coach, inline
  *  time + Reschedule/Cancel, then View Details (+ Join for today's session). */
 export const SessionRow: React.FC<SessionRowProps> = ({
-  session, showJoin, onReschedule, onCancel, onDetails, onJoin,
+  session, showJoin, onCancel, onDetails, onJoin,
 }) => {
   const p = parts(session.slot.startTime);
   const cancelled = session.status === 'CANCELLED';
@@ -39,8 +38,8 @@ export const SessionRow: React.FC<SessionRowProps> = ({
       <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-8">
         <div className="flex items-center gap-4">
           <div className="flex flex-col items-center rounded-[12px] bg-[var(--color-white-mid)] px-5 py-2">
-            <span className="text-body-sm text-black">{p.month}</span>
-            <span className="font-label text-[24px] font-semibold leading-8 text-black">{p.day}</span>
+            <span className="text-body-sm text-[var(--color-black-darkest)]">{p.month}</span>
+            <span className="font-label text-[24px] font-semibold leading-8 text-[var(--color-black-darkest)]">{p.day}</span>
           </div>
           <span className="hidden h-[68px] w-px bg-[var(--color-border-primary)] sm:block" />
         </div>
@@ -49,19 +48,28 @@ export const SessionRow: React.FC<SessionRowProps> = ({
             <p className="text-[20px] leading-9 text-[var(--color-black-dark)]">{session.coach?.fullName}</p>
             <p className="text-[16px] leading-7 text-[var(--color-grey-darkest)]">{role}</p>
           </div>
-          <div className="flex h-[56px] items-center gap-3 rounded-[8px] border-[0.8px] border-[var(--color-border-primary)] bg-white/60 px-3 py-2.5">
+          <div className="flex min-h-[56px] flex-wrap items-center gap-x-3 gap-y-1 rounded-[8px] border-[0.8px] border-[var(--color-border-primary)] bg-white/60 px-3 py-2.5">
             <IconClock size={24} className="text-[var(--color-black-dark)]" />
-            <span className="whitespace-nowrap text-[16px] leading-7 text-[var(--color-black-dark)]">
+            <span className="text-[16px] leading-7 text-[var(--color-black-dark)]">
               {p.weekday}. {timeRange(session.slot.startTime, session.slot.endTime)}
             </span>
-            <span className="text-[19px] font-extralight text-[var(--color-grey-mid)]">|</span>
-            <button
-              onClick={() => (cancelled ? undefined : onCancel && !showJoin ? onCancel(session) : onReschedule?.(session))}
-              className="flex items-center gap-1.5 text-[16px] leading-7 text-[var(--color-black-dark)]"
-            >
-              <IconCalendarCheck size={20} />
-              {cancelled ? 'Cancelled' : onCancel && !showJoin ? 'Cancel' : 'Reschedule'}
-            </button>
+            {cancelled ? (
+              <span className="text-[16px] leading-7 text-[var(--color-error)]">Cancelled</span>
+            ) : (
+              onCancel && !showJoin && (
+                <>
+                  <span aria-hidden="true" className="text-[19px] font-extralight text-[var(--color-grey-mid)]">|</span>
+                  <button
+                    type="button"
+                    onClick={() => onCancel(session)}
+                    className="flex items-center gap-1.5 text-[16px] leading-7 text-[var(--color-error)] hover:underline"
+                  >
+                    <IconCalendarCheck size={20} />
+                    Cancel session
+                  </button>
+                </>
+              )
+            )}
           </div>
         </div>
       </div>

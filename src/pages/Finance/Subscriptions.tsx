@@ -62,7 +62,7 @@ export default function Subscriptions() {
       <div className="max-w-2xl mx-auto space-y-5 pb-8">
         {/* Header */}
         <div>
-          <h1 className="text-h3 text-[var(--color-text-primary)]">Subscriptions</h1>
+          <h2 className="text-h3 text-[var(--color-text-primary)]">Subscriptions</h2>
           <p className="text-body-md text-[var(--color-text-secondary)] mt-1">Auto-detected recurring payments</p>
         </div>
 

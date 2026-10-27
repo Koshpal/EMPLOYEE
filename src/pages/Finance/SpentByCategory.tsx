@@ -9,14 +9,12 @@ import type { AnalyticsOverview, Budget } from '../../types/finance.types';
 import { ChevronRight } from 'lucide-react';
 import { SummarySection, PeriodButton } from '../../components/dashboard/widgets';
 import { SUMMARY_STYLES } from '../../components/dashboard/helpers';
-import { IconBell, IconSettings2 } from '../../components/icons/figma';
+import { HeaderSettingsButton } from '../../components/common/HeaderSettingsButton';
 import { FinanceTabs } from '../../components/finance/FinanceTabs';
 import { categoryByName, iconFor } from '../../data/financeCategories';
 
 const fadeUp = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 } };
 
-const iconBtn =
-  'flex h-10 items-center justify-center rounded-[8px] border border-[var(--color-border-primary)] px-2.5 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)] transition-colors';
 
 function formatINR(n: number) {
   return `₹${Math.round(n || 0).toLocaleString('en-IN')}`;
@@ -84,8 +82,7 @@ export default function SpentByCategory() {
 
   const headerActions = (
     <>
-      <button className={iconBtn} aria-label="Notifications"><IconBell size={20} /></button>
-      <button className={iconBtn} aria-label="Settings"><IconSettings2 size={20} /></button>
+      <HeaderSettingsButton />
     </>
   );
 
@@ -187,7 +184,7 @@ export default function SpentByCategory() {
                         </span>
                         <div className="min-w-0 flex-1">
                           <p className="truncate font-grotesque text-[16px] font-medium leading-[30px] text-[var(--color-black-dark)]">{r.name}</p>
-                          <p className="font-label text-[12px] font-medium leading-[22px] text-[var(--color-neutral-600)]">
+                          <p className="font-label text-[12px] font-medium leading-[22px] text-[var(--color-text-secondary)]">
                             {r.alloted > 0 ? `${formatINR(r.alloted)} Alloted` : 'No budget set'}
                           </p>
                         </div>
@@ -196,7 +193,7 @@ export default function SpentByCategory() {
                             {formatINR(r.spent)}
                           </p>
                           {r.alloted > 0 && (
-                            <p className="font-label text-[12px] font-medium leading-[22px] text-[var(--color-neutral-600)]">
+                            <p className="font-label text-[12px] font-medium leading-[22px] text-[var(--color-text-secondary)]">
                               {over ? `${formatINR(r.spent - r.alloted)} over` : `${formatINR(left)} left`}
                             </p>
                           )}

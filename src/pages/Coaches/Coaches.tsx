@@ -1,12 +1,14 @@
+import { useNavigate } from 'react-router-dom';
 import React, { useEffect, useState } from 'react';
 import { Layout } from '../../components/common/Layout';
 import { CoachCard } from '../../components/cards/CoachCard';
 import { BookingModal } from '../../components/modals/BookingModal';
 import { coachService, type CoachAvailabilitySummary } from '../../services/coach.service';
 import type { Coach } from '../../types/booking.types';
-import { IconRefresh, IconBrain, IconBell, IconSettings2 } from '../../components/icons/figma';
+import { IconRefresh, IconBrain, IconSettings2 } from '../../components/icons/figma';
 
 const Coaches: React.FC = () => {
+  const navigate = useNavigate();
   const [coaches, setCoaches] = useState<Coach[]>([]);
   const [availability, setAvailability] = useState<Record<string, CoachAvailabilitySummary> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,8 +51,7 @@ const Coaches: React.FC = () => {
     'flex h-10 items-center justify-center rounded-[8px] border border-[var(--color-border-primary)] px-2.5 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)] transition-colors';
   const headerActions = (
     <>
-      <button className={iconBtn} aria-label="Notifications"><IconBell size={20} /></button>
-      <button className={iconBtn} aria-label="Settings"><IconSettings2 size={20} /></button>
+      <button className={iconBtn} aria-label="Settings" onClick={() => navigate('/profile')}><IconSettings2 size={20} /></button>
     </>
   );
 
@@ -60,7 +61,7 @@ const Coaches: React.FC = () => {
         isOpen={isBookingOpen}
         coach={selectedCoach}
         onClose={() => setIsBookingOpen(false)}
-        onSuccess={() => setIsBookingOpen(false)}
+        onSuccess={() => { /* keep the modal open: its confirmation step closes via "Done" */ }}
       />
 
       <div className="flex flex-col gap-6">
@@ -78,7 +79,7 @@ const Coaches: React.FC = () => {
             </button>
             <a
               href="mailto:koshpal@koshpal.com?subject=Tips%20for%20picking%20a%20coach"
-              className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-secondary-mid)] pl-2 pr-3 text-[12px] leading-[22px] text-[var(--color-secondary-mid)]"
+              className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-secondary-mid)] pl-2 pr-3 text-[12px] leading-[22px] text-[var(--color-secondary-800)]"
             >
               <IconBrain size={16} />
               Tips for picking a coach

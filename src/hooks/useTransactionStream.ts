@@ -25,6 +25,7 @@ export function useTransactionStream(filters: Filters) {
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState(false);
   const [status, setStatus] = useState<StreamStatus>('connecting');
 
   const filtersRef = useRef<Filters>(filters);
@@ -69,7 +70,10 @@ export function useTransactionStream(filters: Filters) {
       setTransactions(res.transactions);
       setHasMore(res.hasMore);
       setPage(1);
+      setError(false);
       lastTsRef.current = new Date().toISOString();
+    } catch {
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -121,8 +125,10 @@ export function useTransactionStream(filters: Filters) {
         if (cancelled) return;
         setTransactions(res.transactions);
         setHasMore(res.hasMore);
+        setError(false);
         lastTsRef.current = new Date().toISOString();
       })
+      .catch(() => { if (!cancelled) setError(true); })
       .finally(() => !cancelled && setLoading(false));
     return () => {
       cancelled = true;
@@ -166,10 +172,12 @@ export function useTransactionStream(filters: Filters) {
       });
       setHasMore(res.hasMore);
       setPage(next);
+    } catch {
+      setError(true);
     } finally {
       setLoadingMore(false);
     }
   }, [page, loadingMore]);
 
-  return { transactions, loading, loadingMore, hasMore, loadMore, status };
+  return { transactions, loading, loadingMore, hasMore, loadMore, status, error, retry: reload };
 }

@@ -3,15 +3,13 @@ import { motion } from 'framer-motion';
 import { Layout } from '../../components/common/Layout';
 import { SummarySection, DuesReminderCard } from '../../components/dashboard/widgets';
 import { SUMMARY_STYLES } from '../../components/dashboard/helpers';
-import { IconBell, IconSettings2 } from '../../components/icons/figma';
+import { HeaderSettingsButton } from '../../components/common/HeaderSettingsButton';
 import { FinanceTabs } from '../../components/finance/FinanceTabs';
 import { Plus } from 'lucide-react';
 import { getReminders, type Reminder } from '../../services/reminder.service';
 
 const fadeUp = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 } };
 
-const iconBtn =
-  'flex h-10 items-center justify-center rounded-[8px] border border-[var(--color-border-primary)] px-2.5 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)] transition-colors';
 
 function isSameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
@@ -45,8 +43,7 @@ export default function DuesReminders() {
 
   const headerActions = (
     <>
-      <button className={iconBtn} aria-label="Notifications"><IconBell size={20} /></button>
-      <button className={iconBtn} aria-label="Settings"><IconSettings2 size={20} /></button>
+      <HeaderSettingsButton />
     </>
   );
 

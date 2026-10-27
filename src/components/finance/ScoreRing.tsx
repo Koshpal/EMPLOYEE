@@ -102,8 +102,7 @@ export const ScoreRing: React.FC<ScoreRingProps> = ({
       </div>
       {showLabel && (
         <span
-          className="text-sm font-bold"
-          style={{ color }}
+          className="text-sm font-bold text-[var(--color-text-primary)]"
         >
           {getScoreLabel(clampedScore)}
         </span>

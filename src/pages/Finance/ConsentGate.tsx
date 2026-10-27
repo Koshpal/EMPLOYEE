@@ -74,7 +74,7 @@ export default function ConsentGate() {
             <div className="w-16 h-16 rounded-2xl bg-[var(--color-primary)]/10 flex items-center justify-center mx-auto mb-4">
               <Lock className="w-8 h-8 text-[var(--color-primary)]" />
             </div>
-            <h1 className="text-h2 text-[var(--color-text-primary)]">Privacy-First Financial Tracking</h1>
+            <h2 className="text-h2 text-[var(--color-text-primary)]">Privacy-First Financial Tracking</h2>
             <p className="text-body-md text-[var(--color-text-secondary)] mt-2 max-w-md mx-auto">
               Your financial data belongs to you. Choose what you share and with whom. You can change or revoke these at any time.
             </p>
@@ -159,7 +159,7 @@ export default function ConsentGate() {
           <button
             type="button"
             onClick={() => setForm({ smsSync: true, analytics: true, hrVisible: false, coachVisible: false })}
-            className="text-xs font-semibold text-[var(--color-primary)] hover:underline mb-8"
+            className="mb-6 min-h-10 text-xs font-semibold text-[var(--color-primary)] hover:underline"
           >
             Select recommended (Analytics)
           </button>

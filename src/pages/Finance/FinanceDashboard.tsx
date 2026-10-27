@@ -99,7 +99,7 @@ export default function FinanceDashboard() {
         {/* Header */}
         <motion.div {...fadeUp} className="flex items-center justify-between">
           <div>
-            <h1 className="text-h2 text-[var(--color-text-primary)]">Financial Wellness</h1>
+            <h2 className="text-h2 text-[var(--color-text-primary)]">Financial Wellness</h2>
             <p className="text-body-md text-[var(--color-text-secondary)] mt-1">
               Your personal financial intelligence dashboard
             </p>

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Menu, LogOut, ChevronRight, Settings as SettingsIcon } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { useAuth } from '../../context/AuthContext';
-import { IconPlus, IconBell, IconSettings2 } from '../icons/figma';
+import { IconPlus, IconSettings2 } from '../icons/figma';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -39,8 +39,15 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, title, actions, bel
     const onDown = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
     };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
     document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
   }, []);
 
   const iconBtn =
@@ -53,11 +60,12 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, title, actions, bel
           onClick={onMenuClick}
           className="rounded-[8px] border border-[var(--color-border-primary)] p-2.5 text-[var(--color-text-primary)] lg:hidden"
           aria-label="Open menu"
+          aria-haspopup="dialog"
         >
           <Menu className="h-5 w-5" />
         </button>
 
-        <h1 className="flex-1 truncate font-heading text-[24px] font-semibold leading-[44px] text-[var(--color-text-primary)]">
+        <h1 className="min-w-0 flex-1 font-heading text-[18px] font-semibold leading-6 sm:truncate sm:text-[24px] sm:leading-[44px] text-[var(--color-text-primary)]">
           {title}
         </h1>
 
@@ -66,17 +74,15 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, title, actions, bel
             <>
               <button
                 onClick={() => navigate('/coaches')}
-                className="flex h-12 items-center gap-1.5 rounded-[8px] bg-[var(--color-primary)] pl-3 pr-6 text-[16px] font-normal text-white shadow-[var(--shadow-drop-low)] transition-colors hover:bg-[var(--color-primary-darkest)]"
+                aria-label="Book session"
+                className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[var(--color-primary)] text-[16px] sm:h-12 sm:w-auto sm:justify-start sm:gap-1.5 sm:pl-3 sm:pr-6 font-normal text-white shadow-[var(--shadow-drop-low)] transition-colors hover:bg-[var(--color-primary-darkest)]"
               >
                 <IconPlus size={24} />
-                Book session
-              </button>
-              <button className={iconBtn} aria-label="Notifications">
-                <IconBell size={20} />
+                <span className="hidden sm:inline">Book session</span>
               </button>
               <button
                 onClick={() => navigate('/profile')}
-                className={iconBtn}
+                className={`${iconBtn} hidden sm:flex`}
                 aria-label="Settings"
               >
                 <IconSettings2 size={20} />
@@ -89,12 +95,15 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, title, actions, bel
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setMenuOpen((o) => !o)}
+              aria-label="Account menu"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
               className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-primary)] text-sm font-bold text-white transition-transform hover:scale-105"
             >
               {initials}
             </button>
             {menuOpen && (
-              <div className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-[12px] border border-[var(--color-border-primary)] bg-[var(--color-bg-card)] shadow-[var(--shadow-soft)]">
+              <div role="menu" className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-[12px] border border-[var(--color-border-primary)] bg-[var(--color-bg-card)] shadow-[var(--shadow-soft)]">
                 <div className="flex items-center gap-3 border-b border-[var(--color-border-primary)] px-4 py-4">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-primary)] font-bold text-white">
                     {initials}
@@ -121,7 +130,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, title, actions, bel
                   </a>
                   <button
                     onClick={() => logout()}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-sm text-[var(--color-error)] hover:bg-[var(--color-bg-secondary)]"
+                    className="flex w-full items-center gap-3 px-4 py-3 text-sm text-[var(--color-error-dark)] hover:bg-[var(--color-bg-secondary)]"
                   >
                     <LogOut className="h-5 w-5 opacity-70" />
                     <span className="flex-1 text-left font-medium">Log out</span>

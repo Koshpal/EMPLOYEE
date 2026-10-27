@@ -4,8 +4,10 @@ import { Layout } from '../../components/common/Layout';
 import { SessionRow } from '../../components/cards/SessionRow';
 import { SessionDetailsModal } from '../../components/modals/SessionDetailsModal';
 import { coachService } from '../../services/coach.service';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { useToast } from '../../context/ToastContext';
 import type { Consultation } from '../../types/booking.types';
-import { IconBell, IconSettings2, IconAngleDown, IconPlus } from '../../components/icons/figma';
+import { IconSettings2, IconPlus } from '../../components/icons/figma';
 
 type Tab = 'upcoming' | 'past' | 'cancelled';
 
@@ -28,9 +30,15 @@ const Sessions: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>('upcoming');
   const [selected, setSelected] = useState<Consultation | null>(null);
+  const [toCancel, setToCancel] = useState<Consultation | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const toast = useToast();
 
   const fetchSessions = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const data = await coachService.getMyConsultations();
       setSessions(
@@ -38,11 +46,29 @@ const Sessions: React.FC = () => {
       );
     } catch (error) {
       console.error('Error fetching sessions:', error);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
   };
   useEffect(() => { fetchSessions(); }, []);
+
+  const confirmCancel = async () => {
+    if (!toCancel) return;
+    setCancelling(true);
+    setCancelError(null);
+    try {
+      await coachService.cancelConsultation(toCancel.id);
+      setToCancel(null);
+      toast.success('Session cancelled. The time slot has been released.');
+      await fetchSessions();
+    } catch (err) {
+      const msg = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+      setCancelError(msg || 'Could not cancel this session. Please try again.');
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   const buckets = useMemo(() => {
     const now = Date.now();
@@ -69,8 +95,7 @@ const Sessions: React.FC = () => {
 
   const headerActions = (
     <>
-      <button className={iconBtn} aria-label="Notifications"><IconBell size={20} /></button>
-      <button className={iconBtn} aria-label="Settings"><IconSettings2 size={20} /></button>
+      <button className={iconBtn} aria-label="Settings" onClick={() => navigate('/profile')}><IconSettings2 size={20} /></button>
     </>
   );
 
@@ -82,15 +107,17 @@ const Sessions: React.FC = () => {
 
   const headerBelow = (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-center rounded-[6px] bg-[var(--color-white-mid)] px-3 py-2">
+      <div role="tablist" aria-label="Session status" className="flex w-full items-center rounded-[6px] bg-[var(--color-white-mid)] px-3 py-2 sm:w-auto">
         {tabs.map((t) => (
           <button
             key={t.id}
+            role="tab"
+            aria-selected={tab === t.id}
             onClick={() => setTab(t.id)}
-            className={`w-[130px] rounded-[6px] px-6 py-2.5 text-[16px] leading-5 transition-colors ${
+            className={`min-w-0 flex-1 rounded-[6px] px-3 py-2.5 sm:w-[130px] sm:flex-none sm:px-6 text-[16px] leading-5 transition-colors ${
               tab === t.id
-                ? 'bg-[var(--color-bg-card)] text-black shadow-[var(--shadow-drop-low)]'
-                : 'text-[var(--color-grey-darkest)]'
+                ? 'bg-[var(--color-bg-card)] text-[var(--color-black-darkest)] shadow-[var(--shadow-drop-low)]'
+                : 'text-[var(--color-text-secondary)]'
             }`}
           >
             {t.label}
@@ -98,10 +125,6 @@ const Sessions: React.FC = () => {
         ))}
       </div>
       <div className="flex items-center gap-3">
-        <button className="flex w-[108px] items-center justify-center gap-1 rounded-[8px] border border-[var(--color-border-primary)] bg-[var(--color-bg-tertiary)] px-2.5 py-3.5 text-[14px] font-medium leading-5 text-black">
-          {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-          <IconAngleDown size={16} />
-        </button>
         <button
           onClick={() => navigate('/coaches')}
           className="flex h-12 items-center gap-1.5 rounded-[8px] bg-[var(--color-primary)] pl-3 pr-6 text-[16px] leading-7 text-white transition-colors hover:bg-[var(--color-primary-darkest)]"
@@ -120,6 +143,12 @@ const Sessions: React.FC = () => {
           {[0, 1, 2].map((i) => (
             <div key={i} className="h-[106px] animate-pulse rounded-[12px] border border-[var(--color-border-primary)] bg-[var(--color-bg-card)]" />
           ))}
+        </div>
+      ) : loadError ? (
+        <div role="alert" className="rounded-[12px] border border-[var(--color-border-primary)] bg-[var(--color-bg-card)] py-16 text-center">
+          <h3 className="font-heading text-[18px] font-semibold text-[var(--color-text-primary)]">We couldn't load your sessions</h3>
+          <p className="mt-2 text-body-sm text-[var(--color-text-secondary)]">Check your connection and try again.</p>
+          <button onClick={fetchSessions} className="mt-6 rounded-[8px] bg-[var(--color-primary)] px-6 py-2.5 text-[16px] text-white hover:bg-[var(--color-primary-darkest)]">Retry</button>
         </div>
       ) : list.length === 0 ? (
         <div className="rounded-[12px] border border-dashed border-[var(--color-border-primary)] bg-[var(--color-bg-card)] py-20 text-center">
@@ -152,8 +181,7 @@ const Sessions: React.FC = () => {
                   key={s.id}
                   session={s}
                   showJoin={tab === 'upcoming' && isToday(s.slot.startTime)}
-                  onReschedule={() => navigate('/sessions')}
-                  onCancel={tab === 'upcoming' ? () => setSelected(s) : undefined}
+                  onCancel={tab === 'upcoming' && s.status === 'CONFIRMED' ? () => { setCancelError(null); setToCancel(s); } : undefined}
                   onDetails={() => setSelected(s)}
                   onJoin={() => (s.meetingLink ? window.open(s.meetingLink, '_blank') : setSelected(s))}
                 />
@@ -162,6 +190,18 @@ const Sessions: React.FC = () => {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!toCancel}
+        title="Cancel this session?"
+        description={toCancel ? `Your session with ${toCancel.coach?.fullName ?? 'your coach'} will be cancelled and the time slot released. You can book another time afterwards.` : ''}
+        confirmLabel="Cancel session"
+        destructive
+        loading={cancelling}
+        error={cancelError}
+        onConfirm={confirmCancel}
+        onCancel={() => setToCancel(null)}
+      />
 
       <SessionDetailsModal
         isOpen={!!selected}

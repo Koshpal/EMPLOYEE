@@ -69,7 +69,8 @@ const Calendar: React.FC = () => {
                   d.setDate(d.getDate() - 7);
                   setCurrentWeekStart(d);
                 }}
-                className="p-2 hover:bg-[var(--color-bg-card)] rounded-lg transition-all"
+                aria-label="Previous week"
+                className="p-2.5 hover:bg-[var(--color-bg-card)] rounded-lg transition-all"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -92,7 +93,8 @@ const Calendar: React.FC = () => {
                   d.setDate(d.getDate() + 7);
                   setCurrentWeekStart(d);
                 }}
-                className="p-2 hover:bg-[var(--color-bg-card)] rounded-lg transition-all"
+                aria-label="Next week"
+                className="p-2.5 hover:bg-[var(--color-bg-card)] rounded-lg transition-all"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>

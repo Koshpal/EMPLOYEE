@@ -80,6 +80,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCollapsed, 
     return (
       <button
         type="button"
+        aria-label={isCollapsed ? item.label : undefined}
+        aria-current={active ? 'page' : undefined}
         title={isCollapsed ? item.label : undefined}
         onClick={() => (item.onClick ? item.onClick() : go(item.path))}
         className={`group flex h-[42px] w-full items-center gap-2 rounded-[16px] p-1 transition-colors ${
@@ -114,7 +116,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCollapsed, 
 
   return (
     <>
-      {isOpen && <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={onClose} />}
+      {isOpen && <div aria-hidden="true" className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={onClose} />}
 
       <aside
         className={`fixed z-50 flex flex-col bg-[var(--color-bg-card)] transition-all duration-300 ease-in-out
@@ -167,7 +169,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCollapsed, 
             )}
 
             <div className="flex flex-col gap-6">
-              <nav className="flex flex-col gap-2">
+              <nav aria-label="Main" className="flex flex-col gap-2">
                 {main.map((item) => (
                   <NavRow key={item.label} item={item} />
                 ))}
@@ -177,6 +179,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCollapsed, 
                 {!isCollapsed && (
                   <button
                     onClick={() => setActionsOpen((o) => !o)}
+                    aria-expanded={actionsOpen}
                     className="flex items-center justify-between pr-1 text-body-sm text-[var(--color-text-tertiary)]"
                   >
                     <span>Actions</span>

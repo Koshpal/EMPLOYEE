@@ -219,8 +219,8 @@ export function UpcomingSessionCard({
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-8">
           <div className="flex items-center gap-4">
             <div className="flex flex-col items-center rounded-[12px] bg-[var(--color-white-mid)] px-5 py-2">
-              <span className="text-body-sm text-black">{month}</span>
-              <span className="font-label text-[24px] font-semibold leading-8 text-black">{day}</span>
+              <span className="text-body-sm text-[var(--color-black-darkest)]">{month}</span>
+              <span className="font-label text-[24px] font-semibold leading-8 text-[var(--color-black-darkest)]">{day}</span>
             </div>
             <span className="hidden h-[68px] w-px bg-[var(--color-border-primary)] sm:block" />
           </div>
@@ -240,7 +240,7 @@ export function UpcomingSessionCard({
                 className="flex items-center gap-1.5 text-[16px] leading-7 text-[var(--color-black-dark)]"
               >
                 <IconCalendarCheck size={20} />
-                Reschedule
+                Manage session
               </button>
             </div>
           </div>
@@ -289,13 +289,30 @@ export function IncomeExpenseChart({
       </WidgetCard>
     );
   }
+  const hasData = series.some((d) => d.Income > 0 || d.Expense > 0);
+  if (!hasData) {
+    return (
+      <WidgetCard title="Income vs Expense" className="h-full flex-1">
+        <EmptyState
+          title="No income or expenses in this period"
+          body="Transactions recorded in this period will appear here. Try another period or sync your transactions."
+        />
+      </WidgetCard>
+    );
+  }
+  const totalIncome = series.reduce((t, d) => t + d.Income, 0);
+  const totalExpense = series.reduce((t, d) => t + d.Expense, 0);
   return (
     <WidgetCard title="Income vs Expense" className="h-full flex-1">
       <div className="mb-2 flex items-center gap-2.5 font-label text-[12px] font-medium leading-[22px] text-[var(--color-grey-darkest)]">
         {subLeft && <span>{subLeft}</span>}
         {subRight && <span>{subRight}</span>}
       </div>
-      <div className="h-[200px] w-full">
+      <div
+        className="h-[200px] w-full"
+        role="img"
+        aria-label={`Income versus expense line chart. Total income ₹${inr(totalIncome)}, total expense ₹${inr(totalExpense)}.`}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={series} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid vertical={false} stroke="var(--color-border-primary)" strokeDasharray="0" />
@@ -399,6 +416,7 @@ export function SpendsByCategoryCard({
                   paddingAngle={4}
                   cornerRadius={8}
                   stroke="none"
+                  isAnimationActive={false}
                 >
                   {slices.map((_, i) => (
                     <Cell key={i} fill={CAT_COLORS[i % CAT_COLORS.length]} />
@@ -408,14 +426,15 @@ export function SpendsByCategoryCard({
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex flex-1 flex-col justify-center gap-1 p-2.5">
+          <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 p-2.5">
             {slices.map((s, i) => (
               <div key={s.name} className="flex h-[23px] items-center gap-2">
                 <span
                   className="h-3 w-3 shrink-0 rounded-[3px]"
                   style={{ backgroundColor: CAT_COLORS[i % CAT_COLORS.length] }}
                 />
-                <span className="truncate text-body-sm text-[var(--color-black-mid)]">{s.name}</span>
+                <span className="min-w-0 flex-1 truncate text-body-sm text-[var(--color-black-mid)]">{s.name}</span>
+                <span className="shrink-0 text-body-xs tabular-nums text-[var(--color-grey-darkest)]">₹{inr(s.value)}</span>
               </div>
             ))}
           </div>
@@ -474,10 +493,11 @@ export function GoalsCompletionCard({
             { n: upcoming, l: 'Upcoming', c: 'var(--color-error-500)' },
           ].map((s) => (
             <div key={s.l} className="flex flex-col gap-1.5">
-              <span className="text-[20px] leading-9" style={{ color: s.c }}>
-                {s.n}
+              <span className="text-[20px] leading-9 text-[var(--color-black-dark)]">{s.n}</span>
+              <span className="flex items-center gap-1.5 text-[12px] leading-[22px] text-[var(--color-black-mid)]">
+                <span aria-hidden="true" className="h-2 w-2 rounded-full" style={{ backgroundColor: s.c }} />
+                {s.l}
               </span>
-              <span className="text-[12px] leading-[22px] text-[var(--color-black-mid)]">{s.l}</span>
             </div>
           ))}
         </div>
@@ -522,7 +542,7 @@ function Gauge({ percent }: { percent: number }) {
         />
       </svg>
       <div className="absolute inset-x-0 bottom-3 flex flex-col items-center">
-        <span className="font-heading text-[28px] font-normal leading-[46px] text-[var(--color-secondary-500)]">
+        <span className="font-heading text-[28px] font-normal leading-[46px] text-[var(--color-black-dark)]">
           {Math.round(p)}%
         </span>
         <span className="text-body-sm text-[var(--color-grey-darkest)]">Completed</span>
@@ -595,7 +615,7 @@ export function FinancialGoalsTable({
                         style={{ width: `${Math.max(0, Math.min(100, r.progress))}%` }}
                       />
                     </span>
-                    <span className="font-label text-[12px] font-medium leading-[22px] text-[var(--color-neutral-600)]">
+                    <span className="font-label text-[12px] font-medium leading-[22px] text-[var(--color-text-secondary)]">
                       {Math.round(r.progress)}%
                     </span>
                   </div>
@@ -867,7 +887,7 @@ export function DuesReminderCard({
 export function EmptyState({ title, body }: { title: string; body: string }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-1 py-6 text-center">
-      <p className="font-label text-[16px] font-medium leading-7 text-[var(--color-neutral-600)]">{title}</p>
+      <p className="font-label text-[16px] font-medium leading-7 text-[var(--color-text-secondary)]">{title}</p>
       <p className="max-w-[280px] text-body-xs text-[var(--color-grey-darkest)]">{body}</p>
     </div>
   );

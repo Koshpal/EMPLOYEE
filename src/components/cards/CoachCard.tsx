@@ -64,7 +64,7 @@ export const CoachCard: React.FC<CoachCardProps> = ({ coach, onBook, availabilit
           <div className="flex min-w-0 flex-1 flex-col gap-2.5">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="truncate font-heading text-[18px] font-semibold leading-8 text-black">
+                <p className="truncate font-heading text-[18px] font-semibold leading-8 text-[var(--color-black-darkest)]">
                   {coach.fullName}
                 </p>
                 <p className="truncate text-body-sm text-[var(--color-grey-darkest)]">{subtitle}</p>
@@ -80,7 +80,7 @@ export const CoachCard: React.FC<CoachCardProps> = ({ coach, onBook, availabilit
               {coach.expertise.slice(0, 3).map((e) => (
                 <span
                   key={e}
-                  className="rounded-[20px] bg-[var(--color-secondary-lightest)] px-2.5 py-0.5 text-[12px] leading-[18px] text-[var(--color-secondary-mid)]"
+                  className="rounded-[20px] bg-[var(--color-secondary-lightest)] px-2.5 py-0.5 text-[12px] leading-[18px] text-[var(--color-secondary-800)]"
                 >
                   {e}
                 </span>

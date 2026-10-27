@@ -49,7 +49,7 @@ export default function Transactions() {
     [typeFilter, categoryFilter],
   );
 
-  const { transactions, loading, loadingMore, hasMore, loadMore, status } =
+  const { transactions, loading, loadingMore, hasMore, loadMore, status, error, retry } =
     useTransactionStream(filters);
 
   const filtered = useMemo(() => {
@@ -72,7 +72,7 @@ export default function Transactions() {
       <div className="max-w-3xl mx-auto space-y-4 pb-8">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h1 className="text-h3 text-[var(--color-text-primary)]">Transactions</h1>
+          <h2 className="text-h3 text-[var(--color-text-primary)]">Transactions</h2>
           <div className="flex items-center gap-3">
             <span
               className={`flex items-center gap-1.5 text-xs font-semibold ${st.text}`}
@@ -144,6 +144,12 @@ export default function Transactions() {
             {[...Array(8)].map((_, i) => (
               <div key={i} className="h-14 bg-[var(--color-bg-card)] rounded-xl animate-pulse border border-[var(--color-border-primary)]" />
             ))}
+          </div>
+        ) : error && transactions.length === 0 ? (
+          <div role="alert" className="text-center py-16 text-[var(--color-text-secondary)]">
+            <p className="font-medium text-[var(--color-text-primary)]">We couldn't load your transactions</p>
+            <p className="text-xs mt-1 mb-5 text-[var(--color-text-tertiary)]">Check your connection and try again. Your data is safe.</p>
+            <button onClick={() => void retry()} className="rounded-[8px] bg-[var(--color-primary)] px-6 py-2.5 text-sm text-white hover:bg-[var(--color-primary-darkest)]">Retry</button>
           </div>
         ) : grouped.length === 0 ? (
           <div className="text-center py-16 text-[var(--color-text-secondary)]">

@@ -14,8 +14,9 @@ import {
 } from '../../data/financeCategories';
 import { SummarySection } from '../../components/dashboard/widgets';
 import { SUMMARY_STYLES } from '../../components/dashboard/helpers';
-import { IconBell, IconSettings2 } from '../../components/icons/figma';
+import { HeaderSettingsButton } from '../../components/common/HeaderSettingsButton';
 import { FinanceTabs } from '../../components/finance/FinanceTabs';
+import { apiErrorMessage } from '../../utils/apiError';
 
 const fadeUp = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 } };
 
@@ -143,7 +144,7 @@ function BudgetModal({ budget, onClose, onSave }: ModalProps) {
         // UPDATE: flat category items. Existing rows carry an id; a sub-category
         // is a flat item with parentCategoryId. Subs of a brand-new category
         // can't be attached in the same call — save, then reopen to add them.
-        const flat: any[] = [];
+        const flat: Record<string, unknown>[] = [];
         for (const d of drafts) {
           const cat = catMeta(d.catId);
           flat.push({
@@ -184,8 +185,8 @@ function BudgetModal({ budget, onClose, onSave }: ModalProps) {
 
       await onSave(payload, budget?.id);
       onClose();
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Failed to save budget. Please try again.');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Failed to save budget. Please try again.'));
     } finally {
       setBusy(false);
     }
@@ -521,7 +522,7 @@ function BudgetDetail({
                 style={{ width: `${pct}%`, backgroundColor: over ? 'var(--color-error-dark)' : 'var(--color-primary)' }}
               />
             </span>
-            <span className="font-label text-[12px] font-medium leading-[22px] text-[var(--color-neutral-600)]">{pct}%</span>
+            <span className="font-label text-[12px] font-medium leading-[22px] text-[var(--color-text-secondary)]">{pct}%</span>
           </div>
         </div>
       </div>
@@ -550,7 +551,7 @@ function BudgetDetail({
                   </span>
                   <div>
                     <p className="font-grotesque text-[16px] font-medium leading-[30px] text-[var(--color-black-dark)]">{c.name}</p>
-                    <p className="font-label text-[12px] font-medium leading-[22px] text-[var(--color-neutral-600)]">
+                    <p className="font-label text-[12px] font-medium leading-[22px] text-[var(--color-text-secondary)]">
                       {formatINR(c.allottedAmount)} Alloted
                     </p>
                   </div>
@@ -563,7 +564,7 @@ function BudgetDetail({
                 </div>
                 <div className="flex items-center gap-1.5 whitespace-nowrap">
                   <span className="font-grotesque text-[18px] font-medium leading-8 text-[var(--color-primary)]">{formatINR(catLeft)}</span>
-                  <span className="font-label text-[12px] font-medium leading-[22px] text-[var(--color-neutral-600)]">Amount left</span>
+                  <span className="font-label text-[12px] font-medium leading-[22px] text-[var(--color-text-secondary)]">Amount left</span>
                 </div>
               </div>
               <div className="mt-3.5 flex items-center justify-between border-t border-dashed border-[var(--color-white-lightest)] px-3.5 py-2">
@@ -696,8 +697,7 @@ export default function Budgets() {
 
   const headerActions = (
     <>
-      <button className={iconBtn} aria-label="Notifications"><IconBell size={20} /></button>
-      <button className={iconBtn} aria-label="Settings"><IconSettings2 size={20} /></button>
+      <HeaderSettingsButton />
     </>
   );
 

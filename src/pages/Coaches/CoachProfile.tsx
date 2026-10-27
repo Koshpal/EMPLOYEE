@@ -4,7 +4,8 @@ import { Layout } from '../../components/common/Layout';
 import { SessionDetailsModal } from '../../components/modals/SessionDetailsModal';
 import { coachService } from '../../services/coach.service';
 import type { Coach, Consultation } from '../../types/booking.types';
-import { IconStar, IconClock, IconBell, IconSettings2 } from '../../components/icons/figma';
+import { HeaderSettingsButton } from '../../components/common/HeaderSettingsButton';
+import { IconStar, IconClock } from '../../components/icons/figma';
 
 function fmtDay(iso?: string) {
   const d = iso ? new Date(iso) : new Date();
@@ -24,8 +25,6 @@ function fmtSlot(s?: Consultation) {
   };
 }
 
-const iconBtn =
-  'flex h-10 items-center justify-center rounded-[8px] border border-[var(--color-border-primary)] px-2.5 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)] transition-colors';
 
 const CoachProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -58,8 +57,7 @@ const CoachProfile: React.FC = () => {
 
   const headerActions = (
     <>
-      <button className={iconBtn} aria-label="Notifications"><IconBell size={20} /></button>
-      <button className={iconBtn} aria-label="Settings"><IconSettings2 size={20} /></button>
+      <HeaderSettingsButton />
     </>
   );
 
@@ -122,7 +120,7 @@ const CoachProfile: React.FC = () => {
                       {(coach?.expertise ?? []).slice(0, 3).map((e) => (
                         <span
                           key={e}
-                          className="rounded-[20px] bg-[var(--color-secondary-lightest)] px-2.5 py-0.5 text-[16px] leading-7 text-[var(--color-secondary-mid)]"
+                          className="rounded-[20px] bg-[var(--color-secondary-lightest)] px-2.5 py-0.5 text-[16px] leading-7 text-[var(--color-secondary-800)]"
                         >
                           {e}
                         </span>
@@ -198,8 +196,8 @@ const CoachProfile: React.FC = () => {
                     >
                       <div className="flex items-center gap-6">
                         <div className="flex flex-col items-center rounded-[12px] bg-[var(--color-white-mid)] px-5 py-2">
-                          <span className="text-body-sm text-black">{d.month}</span>
-                          <span className="font-label text-[24px] font-semibold leading-8 text-black">{d.day}</span>
+                          <span className="text-body-sm text-[var(--color-black-darkest)]">{d.month}</span>
+                          <span className="font-label text-[24px] font-semibold leading-8 text-[var(--color-black-darkest)]">{d.day}</span>
                         </div>
                         <span className="h-[68px] w-px bg-[var(--color-border-primary)]" />
                       </div>
@@ -249,7 +247,7 @@ function Section({ title, body }: { title: string; body: string }) {
   return (
     <div className="flex flex-col gap-1">
       <h4 className="font-heading text-[18px] font-semibold leading-8 text-[var(--color-black-mid)]">{title}</h4>
-      <p className="font-label text-[16px] leading-[26px] text-[var(--color-neutral-600)]">{body}</p>
+      <p className="font-label text-[16px] leading-[26px] text-[var(--color-text-secondary)]">{body}</p>
     </div>
   );
 }

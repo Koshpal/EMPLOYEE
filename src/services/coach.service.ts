@@ -84,7 +84,7 @@ export const coachService = {
   },
 
   cancelConsultation: async (id: string) => {
-    const response = await axiosInstance.post(`/employee/consultations/${id}/cancel`);
+    const response = await axiosInstance.patch(`/employee/consultations/${id}/cancel`);
     return response.data;
   },
 };

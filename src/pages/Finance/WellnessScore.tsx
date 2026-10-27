@@ -58,7 +58,7 @@ export default function WellnessScore() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-h3 text-[var(--color-text-primary)]">Wellness Score</h1>
+            <h2 className="text-h3 text-[var(--color-text-primary)]">Wellness Score</h2>
             <p className="text-body-sm text-[var(--color-text-secondary)] mt-0.5">
               {score?.scoreDate ? `Last updated ${new Date(score.scoreDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}` : 'No score yet'}
             </p>
@@ -118,7 +118,7 @@ export default function WellnessScore() {
                       </div>
                       <span className="text-sm font-semibold text-[var(--color-text-primary)]">{comp.label}</span>
                     </div>
-                    <span className="text-sm font-bold tabular-nums" style={{ color: comp.color }}>
+                    <span className="text-sm font-bold tabular-nums text-[var(--color-text-primary)]">
                       {value} / {comp.max}
                     </span>
                   </div>
