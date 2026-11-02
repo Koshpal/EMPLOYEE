@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   IconChartPie,
   IconAddressBook,
-  IconActivitySquare,
+  // IconActivitySquare,
   IconAlarmClock,
   IconAnglesLeft,
   IconAngleUpSmall,
