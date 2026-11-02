@@ -51,7 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCollapsed, 
     { icon: IconChartPie, label: 'Overview', path: '/dashboard', match: (p) => p === '/dashboard' || p === '/' },
     { icon: IconAddressBook, label: 'Book Coach', path: '/coaches', match: (p) => p.startsWith('/coaches') },
     { icon: Wallet, label: 'Finance', path: '/finance/budgets', match: (p) => p.startsWith('/finance/') },
-    { icon: IconActivitySquare, label: 'Insights', path: '/finance/insights', match: (p) => p === '/finance/insights' },
+    // { icon: IconActivitySquare, label: 'Insights', path: '/finance/insights', match: (p) => p === '/finance/insights' },
     { icon: IconAlarmClock, label: 'Sessions', path: '/sessions', match: (p) => p.startsWith('/sessions') },
   ];
 
@@ -125,7 +125,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCollapsed, 
           ${isOpen ? 'translate-x-0' : ''}
           ${isCollapsed ? 'lg:w-[88px]' : 'lg:w-[256px]'}`}
       >
-        <div className="flex flex-1 flex-col justify-between overflow-y-auto p-6">
+        <div className="flex flex-col justify-between flex-1 p-6 overflow-y-auto">
           <div className="flex flex-col gap-6">
             {/* Logo & collapse */}
             <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
@@ -144,7 +144,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCollapsed, 
                 className="rounded-[8px] border border-[var(--color-border-primary)] p-2.5 text-[var(--color-text-secondary)] lg:hidden"
                 aria-label="Close menu"
               >
-                <X className="h-5 w-5" />
+                <X className="w-5 h-5" />
               </button>
 
               {onToggleCollapse && !isCollapsed && (
@@ -194,7 +194,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCollapsed, 
 
           {/* User */}
           <div className={`flex items-center gap-4 pt-6 ${isCollapsed ? 'justify-center' : ''}`}>
-            <div className="relative h-10 w-10 shrink-0">
+            <div className="relative w-10 h-10 shrink-0">
               <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[var(--color-primary)] text-sm font-bold text-white">
                 {initials}
               </div>
