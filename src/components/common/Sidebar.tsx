@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { X, Wallet } from 'lucide-react';
+import { X, Wallet, HeartHandshake } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
   IconChartPie,
@@ -53,6 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isCollapsed, 
     { icon: Wallet, label: 'Finance', path: '/finance/budgets', match: (p) => p.startsWith('/finance/') },
     // { icon: IconActivitySquare, label: 'Insights', path: '/finance/insights', match: (p) => p === '/finance/insights' },
     { icon: IconAlarmClock, label: 'Sessions', path: '/sessions', match: (p) => p.startsWith('/sessions') },
+    { icon: HeartHandshake, label: 'My coaching', path: '/coaching', match: (p) => p.startsWith('/coaching') },
   ];
 
   const actions: Item[] = [

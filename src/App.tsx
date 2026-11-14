@@ -11,9 +11,11 @@ const Dashboard = lazy(() => import('./pages/Dashboard/Dashboard'));
 const Coaches = lazy(() => import('./pages/Coaches/Coaches'));
 const CoachProfile = lazy(() => import('./pages/Coaches/CoachProfile'));
 const Sessions = lazy(() => import('./pages/Sessions/Sessions'));
+const MyCoaching = lazy(() => import('./pages/Coaching/MyCoaching'));
 const Profile = lazy(() => import('./pages/Profile/Profile'));
 const Calendar = lazy(() => import('./pages/Calendar/Calendar'));
 const MoneyCheckIn = lazy(() => import('./pages/Onboarding/MoneyCheckIn'));
+const CoachingConsent = lazy(() => import('./pages/Profile/CoachingConsent'));
 
 // Finance pages
 const FinanceDashboard = lazy(() => import('./pages/Finance/FinanceDashboard'));
@@ -39,8 +41,10 @@ function App() {
         <Route path="/coaches" element={<ProtectedRoute><Coaches /></ProtectedRoute>} />
         <Route path="/coaches/:id" element={<ProtectedRoute><CoachProfile /></ProtectedRoute>} />
         <Route path="/sessions" element={<ProtectedRoute><Sessions /></ProtectedRoute>} />
+        <Route path="/coaching" element={<ProtectedRoute><MyCoaching /></ProtectedRoute>} />
         <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/coaching-consent" element={<ProtectedRoute><CoachingConsent /></ProtectedRoute>} />
         <Route path="/onboarding" element={<ProtectedRoute><MoneyCheckIn /></ProtectedRoute>} />
 
         {/* Finance routes */}

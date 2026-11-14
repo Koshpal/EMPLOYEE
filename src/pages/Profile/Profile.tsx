@@ -8,6 +8,7 @@ import { Badge } from '../../components/ui/Badge';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { Link } from 'react-router-dom';
 
 const SUPPORT_EMAIL = 'koshpal@koshpal.com';
 
@@ -308,7 +309,10 @@ id="pf-email"
                 <h2 className="text-xl font-bold text-[var(--color-text-primary)] font-heading">Security & Privacy</h2>
               </div>
               <p className="text-[var(--color-text-secondary)] mb-6">Manage your account security and authentication preferences.</p>
-              <Button variant="outline" size="md" onClick={() => setShowPasswordModal(true)}>Change Password</Button>
+              <div className="flex flex-wrap gap-3">
+                <Button variant="outline" size="md" onClick={() => setShowPasswordModal(true)}>Change Password</Button>
+                <Link to="/coaching-consent" className="inline-flex items-center rounded-xl border border-[var(--color-border-primary)] px-4 py-2 text-sm font-semibold text-[var(--color-text-primary)] hover:border-[var(--color-primary)]">Coaching consent</Link>
+              </div>
             </div>
           </div>
 
