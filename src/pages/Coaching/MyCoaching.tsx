@@ -7,7 +7,7 @@ const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(
 const human = (k: string) => k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
 const TITLES: Record<string, string> = { EMERGENCY_FUND: 'Emergency fund', DEBT_PAYOFF: 'Debt payoff plan', EMI: 'Loan EMI', SIP: 'SIP growth', GOAL_SAVING: 'Goal saving', NET_WORTH: 'Net worth', BUDGET_SPLIT: 'Budget split', INSURANCE_COVER: 'Life cover estimate', TAX_COMPARE: 'Tax regime comparison' };
 
-const Values = ({ value }: { value: any }) => {
+const Values = ({ value }: { value: unknown }) => {
   if (Array.isArray(value)) return <ul className="flex flex-col gap-1">{value.map((v, i) => <li key={i} className="rounded-lg bg-[var(--color-bg-secondary)] px-3 py-2"><Values value={v} /></li>)}</ul>;
   if (value && typeof value === 'object') return <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">{Object.entries(value).map(([k, v]) => <div key={k} className="contents"><dt className="text-sm text-[var(--color-text-tertiary)]">{human(k)}</dt><dd className="text-sm font-medium text-[var(--color-text-primary)]"><Values value={v} /></dd></div>)}</dl>;
   return <span>{typeof value === 'number' ? value.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : value == null ? '—' : String(value)}</span>;
@@ -37,7 +37,7 @@ function Shared() {
 
   const confirm = async (r: SharedResult) => {
     setBusy(r.id);
-    try { await coachingOpsService.confirm(r.id, r.version); await load(true); } catch (e: any) { setError(apiMessage(e)); if (e?.response?.status === 409 || e?.response?.status === 404) await load(true); } finally { setBusy(null); }
+    try { await coachingOpsService.confirm(r.id, r.version); await load(true); } catch (e) { setError(apiMessage(e)); const status = (e as { response?: { status?: number } })?.response?.status; if (status === 409 || status === 404) await load(true); } finally { setBusy(null); }
   };
   if (!items) return error ? <p role="alert" className="text-sm text-[var(--color-error-dark)]">{error}</p> : <div className="h-32 animate-pulse rounded-2xl bg-[var(--color-bg-tertiary)]" aria-busy="true" />;
   return (

@@ -22,13 +22,13 @@ export default function CoachingConsent() {
     if (!text) return;
     setBusy(true); setError(null);
     try { await coachingConsentService.grant(text.id, text.disclosures.map((d) => d.key)); setAccepted({}); await load(); }
-    catch (e: any) { setError(e?.response?.data?.message ?? 'Could not save your consent.'); }
+    catch (e) { setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Could not save your consent.'); }
     finally { setBusy(false); }
   };
   const withdraw = async () => {
     setBusy(true); setError(null);
     try { await coachingConsentService.withdraw(); setConfirmWithdraw(false); await load(); }
-    catch (e: any) { setError(e?.response?.data?.message ?? 'Could not withdraw your consent.'); }
+    catch (e) { setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Could not withdraw your consent.'); }
     finally { setBusy(false); }
   };
 

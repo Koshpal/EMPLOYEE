@@ -1,7 +1,5 @@
-import { axiosInstance } from './api';
+import { BASE_URL, refreshSession } from './api';
 import type { TransactionStreamEvent } from '../types/finance.types';
-
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
 
 export type StreamStatus = 'connecting' | 'live' | 'reconnecting' | 'offline';
 
@@ -96,7 +94,7 @@ export class TransactionStream {
       if (!this.refreshedThisCycle) {
         this.refreshedThisCycle = true;
         try {
-          await axiosInstance.post('/auth/refresh', {});
+          await refreshSession();
         } catch {
           /* refresh failed — the 401 handler elsewhere will redirect if needed */
         }

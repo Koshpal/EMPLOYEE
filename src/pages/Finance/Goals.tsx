@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { createElement, useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Pencil, Trash2, X, Ban } from 'lucide-react';
 import { Layout } from '../../components/common/Layout';
@@ -15,8 +15,7 @@ const fadeUp = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 } }
 /** Renders a goal's `iconResId` (a string key — see financeCategories.ts),
  *  falling back to the "no icon" glyph for "none" or an unrecognized key. */
 function GoalIcon({ iconResId, className }: { iconResId?: string | null; className?: string }) {
-  const Icon = goalIconFor(iconResId) ?? Ban;
-  return <Icon className={className} />;
+  return createElement(goalIconFor(iconResId) ?? Ban, { className });
 }
 
 function formatDate(iso: string) {

@@ -1,6 +1,6 @@
 import { axiosInstance as api } from './api';
 
-export interface SharedResult { id: string; tool: string; inputs: any; outputs: any; status: 'SHARED' | 'CONFIRMED'; version: number; configRef: string | null; updatedAt: string; confirmedAt: string | null }
+export interface SharedResult { id: string; tool: string; inputs: unknown; outputs: unknown; status: 'SHARED' | 'CONFIRMED'; version: number; configRef: string | null; updatedAt: string; confirmedAt: string | null }
 export interface WorksheetField { key: string; label: string; type: 'text' | 'number' | 'longtext'; required?: boolean }
 export interface HomeworkItem {
   id: string; status: 'ASSIGNED' | 'IN_PROGRESS' | 'SUBMITTED' | 'REVIEWED'; dueDate: string | null; instructions: string | null;
@@ -17,8 +17,10 @@ export const coachingOpsService = {
   preferences: () => api.get<{ homeworkReminders: boolean; sessionReminders: boolean }>(`${E}/preferences`).then((r) => r.data),
   setPreferences: (p: { homeworkReminders?: boolean; sessionReminders?: boolean }) => api.put(`${E}/preferences`, p).then((r) => r.data),
 };
-export const apiMessage = (e: any) => {
-  if (!e?.response) return 'Cannot reach the server. Please check your connection.';
-  const m = e.response.data?.message;
+type ApiErrorLike = { response?: { status?: number; data?: { message?: string | string[] } } };
+export const apiMessage = (e: unknown) => {
+  const err = e as ApiErrorLike | null | undefined;
+  if (!err?.response) return 'Cannot reach the server. Please check your connection.';
+  const m = err.response.data?.message;
   return (Array.isArray(m) ? m.join(', ') : m) ?? 'Something went wrong';
 };

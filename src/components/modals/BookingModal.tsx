@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, ChevronLeft, ChevronRight, Clock, Calendar as CalendarIcon, Check, Video, Loader2 } from 'lucide-react';
 import type { Coach, Slot } from '../../types/booking.types';
 import { Button } from '../ui/Button';
@@ -24,35 +24,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
   const [datesWithSlots, setDatesWithSlots] = useState<Set<string>>(new Set());
+  const slotsRequestId = useRef(0);
 
-  // Reset modal state when opened/closed
-  useEffect(() => {
-    if (isOpen) {
-      setCurrentStep(1);
-      setSelectedDate(null);
-      setSelectedSlot(null);
-      setNotes('');
-      if (coach) {
-        fetchMonthAvailability();
-      }
-    }
-  }, [isOpen, coach]);
-
-  // Fetch month availability when month or coach changes
-  useEffect(() => {
-    if (isOpen && coach) {
-      fetchMonthAvailability();
-    }
-  }, [currentMonth, coach]);
-
-  // Fetch slots when date is selected
-  useEffect(() => {
-    if (selectedDate && coach) {
-      fetchSlotsForDate();
-    }
-  }, [selectedDate, coach]);
-
-  const fetchMonthAvailability = async () => {
+  const fetchMonthAvailability = useCallback(async () => {
     if (!coach) return;
     try {
       const year = currentMonth.getFullYear();
@@ -70,14 +44,17 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
     } catch (error) {
       console.error('Error fetching availability:', error);
     }
-  };
+  }, [coach, currentMonth]);
 
-  const fetchSlotsForDate = async () => {
+  const fetchSlotsForDate = useCallback(async () => {
     if (!coach || !selectedDate) return;
+    const requestId = ++slotsRequestId.current;
     setLoadingSlots(true);
     try {
       const dateStr = formatDateLocal(selectedDate);
       const response = await coachService.getCoachSlots(coach.id, dateStr);
+      // A newer date was picked while this one was loading: drop this answer.
+      if (requestId !== slotsRequestId.current) return;
 
       const slotsArray = Array.isArray(response) ? response : (response as { slots?: Slot[] } | null)?.slots || [];
 
@@ -95,9 +72,33 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
     } catch (error) {
       console.error('Error fetching slots:', error);
     } finally {
-      setLoadingSlots(false);
+      if (requestId === slotsRequestId.current) setLoadingSlots(false);
     }
-  };
+  }, [coach, selectedDate]);
+
+  // Reset modal state when opened
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentStep(1);
+      setSelectedDate(null);
+      setSelectedSlot(null);
+      setNotes('');
+    }
+  }, [isOpen, coach]);
+
+  // Fetch month availability when the modal opens or the month / coach changes
+  useEffect(() => {
+    if (isOpen && coach) {
+      void fetchMonthAvailability();
+    }
+  }, [isOpen, coach, fetchMonthAvailability]);
+
+  // Fetch slots when a date is selected
+  useEffect(() => {
+    if (selectedDate && coach) {
+      void fetchSlotsForDate();
+    }
+  }, [selectedDate, coach, fetchSlotsForDate]);
 
   const handleBook = async () => {
     if (!selectedSlot || !coach) return;

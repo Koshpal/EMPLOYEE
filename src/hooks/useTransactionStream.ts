@@ -133,7 +133,6 @@ export function useTransactionStream(filters: Filters) {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.type, filters.category]);
 
   // One long-lived stream for the page's lifetime.

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../../components/common/Layout';
 import { coachService } from '../../services/coach.service';
@@ -19,11 +19,7 @@ const Calendar: React.FC = () => {
     return start;
   });
 
-  useEffect(() => {
-    fetchSessions();
-  }, [currentWeekStart]);
-
-  const fetchSessions = async () => {
+  const fetchSessions = useCallback(async () => {
     setLoading(true);
     try {
       const end = new Date(currentWeekStart);
@@ -39,7 +35,11 @@ const Calendar: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentWeekStart]);
+
+  useEffect(() => {
+    void fetchSessions();
+  }, [fetchSessions]);
 
   const hours = Array.from({ length: 15 }, (_, i) => i + 8); // 8 AM to 10 PM
 

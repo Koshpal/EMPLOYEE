@@ -622,7 +622,6 @@ const mockAdapter: AxiosAdapter = async (cfg) => {
   await new Promise((res) => setTimeout(res, 120));
 
   if (!route) {
-    // eslint-disable-next-line no-console
     console.warn(`[devMock] no fixture for ${method.toUpperCase()} ${path} — returning {}`);
     return { ...base, data: {} };
   }
@@ -640,6 +639,5 @@ export function installDevMock(): void {
     return;
   }
   axiosInstance.defaults.adapter = mockAdapter;
-  // eslint-disable-next-line no-console
   console.info('%c[devMock] active — REST calls are answered with Figma-shaped fixtures. Remove localStorage.koshpal_mock to disable.', 'color:#334eac');
 }

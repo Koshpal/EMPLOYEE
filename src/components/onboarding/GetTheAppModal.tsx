@@ -2,10 +2,11 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { X, Smartphone, Zap } from 'lucide-react';
 
-// TODO: replace with the real store URLs once published.
-const APP_STORE_URL = 'https://apps.apple.com/app/koshpal';
-const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.koshpal';
-const SHORT_LINK = 'koshpal.com/app';
+// Set these in the hosting environment once the app is published. Until then the modal shows no store
+// buttons rather than links to listings that may not exist.
+const APP_STORE_URL: string | undefined = import.meta.env.VITE_APP_STORE_URL || undefined;
+const PLAY_STORE_URL: string | undefined = import.meta.env.VITE_PLAY_STORE_URL || undefined;
+const SHORT_LINK: string | undefined = import.meta.env.VITE_APP_SHORT_LINK || undefined;
 
 interface Props {
   onClose: () => void;
@@ -50,6 +51,7 @@ export const GetTheAppModal: React.FC<Props> = ({ onClose }) => (
       </div>
 
       <div className="mt-6 flex flex-col gap-3">
+        {PLAY_STORE_URL && (
         <a
           href={PLAY_STORE_URL}
           target="_blank"
@@ -58,6 +60,8 @@ export const GetTheAppModal: React.FC<Props> = ({ onClose }) => (
         >
           Get it on Google Play
         </a>
+        )}
+        {APP_STORE_URL && (
         <a
           href={APP_STORE_URL}
           target="_blank"
@@ -66,11 +70,19 @@ export const GetTheAppModal: React.FC<Props> = ({ onClose }) => (
         >
           Download on the App Store
         </a>
+        )}
+        {!PLAY_STORE_URL && !APP_STORE_URL && (
+          <p className="rounded-xl border border-[var(--color-border-primary)] p-4 text-center text-sm text-[var(--color-text-secondary)]">
+            The download links will appear here once the app is available for your phone.
+          </p>
+        )}
       </div>
 
-      <p className="mt-4 text-center text-xs text-[var(--color-text-tertiary)]">
-        Or open <span className="font-semibold text-[var(--color-text-secondary)]">{SHORT_LINK}</span> on your phone
-      </p>
+      {SHORT_LINK && (
+        <p className="mt-4 text-center text-xs text-[var(--color-text-tertiary)]">
+          Or open <span className="font-semibold text-[var(--color-text-secondary)]">{SHORT_LINK}</span> on your phone
+        </p>
+      )}
     </motion.div>
   </div>
 );

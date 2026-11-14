@@ -133,7 +133,7 @@ export default function MoneyCheckIn() {
 
   const next = () => (step === total - 1 ? submit() : setStep((s) => s + 1));
 
-  const Chips = <T extends string>({
+  const renderChips = <T extends string>({
     options,
     selected,
     onPick,
@@ -210,30 +210,30 @@ export default function MoneyCheckIn() {
             </h1>
             <p className="mb-6 mt-1 text-sm text-[var(--color-text-secondary)]">{STEP_META[step].hint}</p>
 
-            {step === 0 && (
-              <Chips options={AGE} selected={a.ageGroup ? [a.ageGroup] : []} multi={false}
-                onPick={(v) => setA({ ...a, ageGroup: v })} />
-            )}
-            {step === 1 && (
-              <Chips options={SALARY} selected={a.monthlySalaryRange ? [a.monthlySalaryRange] : []} multi={false}
-                onPick={(v) => setA({ ...a, monthlySalaryRange: v })} />
-            )}
-            {step === 2 && (
-              <Chips options={GOALS} selected={a.improvementGoals} multi
-                onPick={(v) => setA({ ...a, improvementGoals: toggle(a.improvementGoals, v) })} />
-            )}
-            {step === 3 && (
-              <Chips options={CHALLENGES} selected={a.moneyChallenges} multi
-                onPick={(v) => setA({ ...a, moneyChallenges: toggle(a.moneyChallenges, v) })} />
-            )}
-            {step === 4 && (
-              <Chips options={STYLES} selected={a.moneyManagementStyles} multi
-                onPick={(v) => setA({ ...a, moneyManagementStyles: toggle(a.moneyManagementStyles, v) })} />
-            )}
-            {step === 5 && (
-              <Chips options={HELP} selected={a.helpNeeded} multi
-                onPick={(v) => setA({ ...a, helpNeeded: toggle(a.helpNeeded, v) })} />
-            )}
+            {step === 0 && renderChips({
+              options: AGE, selected: a.ageGroup ? [a.ageGroup] : [], multi: false,
+              onPick: (v) => setA({ ...a, ageGroup: v }),
+            })}
+            {step === 1 && renderChips({
+              options: SALARY, selected: a.monthlySalaryRange ? [a.monthlySalaryRange] : [], multi: false,
+              onPick: (v) => setA({ ...a, monthlySalaryRange: v }),
+            })}
+            {step === 2 && renderChips({
+              options: GOALS, selected: a.improvementGoals, multi: true,
+              onPick: (v) => setA({ ...a, improvementGoals: toggle(a.improvementGoals, v) }),
+            })}
+            {step === 3 && renderChips({
+              options: CHALLENGES, selected: a.moneyChallenges, multi: true,
+              onPick: (v) => setA({ ...a, moneyChallenges: toggle(a.moneyChallenges, v) }),
+            })}
+            {step === 4 && renderChips({
+              options: STYLES, selected: a.moneyManagementStyles, multi: true,
+              onPick: (v) => setA({ ...a, moneyManagementStyles: toggle(a.moneyManagementStyles, v) }),
+            })}
+            {step === 5 && renderChips({
+              options: HELP, selected: a.helpNeeded, multi: true,
+              onPick: (v) => setA({ ...a, helpNeeded: toggle(a.helpNeeded, v) }),
+            })}
           </motion.div>
         </AnimatePresence>
 

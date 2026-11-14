@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Layout } from '../../components/common/Layout';
 import { employeeService } from '../../services/employee.service';
 import type { UserProfile } from '../../types/employee.types';
@@ -39,11 +39,7 @@ const Profile: React.FC = () => {
   const [phoneError, setPhoneError] = useState('');
   const [nameError, setNameError] = useState('');
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const data = await employeeService.getProfile();
       setProfile(data);
@@ -56,7 +52,11 @@ const Profile: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void fetchProfile();
+  }, [fetchProfile]);
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();

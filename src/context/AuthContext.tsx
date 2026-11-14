@@ -23,6 +23,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           setUser(JSON.parse(raw));
           setLoading(false);
+          // The cached user is only a first paint. Confirm the session is still valid in the background
+          // (an expired one is refreshed, or sent to /login, by the API client) and pick up profile changes.
+          employeeService
+            .getCurrentUser()
+            .then((me) => {
+              if (me && (me as { role?: string }).role === 'EMPLOYEE') {
+                setUser(me);
+                localStorage.setItem('user', JSON.stringify(me));
+              }
+            })
+            .catch(() => undefined);
           return;
         } catch {
           localStorage.removeItem('user');

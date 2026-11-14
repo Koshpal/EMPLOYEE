@@ -20,7 +20,6 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: unknown, info: unknown) {
-    // eslint-disable-next-line no-console
     console.error('Unhandled UI error:', error, info);
   }
 

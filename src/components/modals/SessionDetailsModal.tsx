@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, Star, Send } from 'lucide-react';
 import type { Consultation } from '../../types/booking.types';
 import { Button } from '../ui/Button';
@@ -42,17 +42,13 @@ export const SessionDetailsModal: React.FC<SessionDetailsModalProps> = ({
   const [notes, setNotes] = useState<SessionNotes | null>(null);
   const [loadingNotes, setLoadingNotes] = useState(false);
 
-  useEffect(() => {
-    if (isOpen && session) {
-      fetchSessionNotes();
-    }
-  }, [isOpen, session]);
+  const sessionId = session?.id;
 
-  const fetchSessionNotes = async () => {
-    if (!session) return;
+  const fetchSessionNotes = useCallback(async () => {
+    if (!sessionId) return;
     setLoadingNotes(true);
     try {
-      const data = await coachService.getSessionDetails(session.id);
+      const data = await coachService.getSessionDetails(sessionId);
       setNotes(data);
       if (data.employeeFeedback) {
         setRating(data.employeeFeedback.rating);
@@ -63,7 +59,13 @@ export const SessionDetailsModal: React.FC<SessionDetailsModalProps> = ({
     } finally {
       setLoadingNotes(false);
     }
-  };
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (isOpen && sessionId) {
+      void fetchSessionNotes();
+    }
+  }, [isOpen, sessionId, fetchSessionNotes]);
 
   if (!isOpen || !session) return null;
 
