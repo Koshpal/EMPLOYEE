@@ -184,9 +184,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
 
   if (!isOpen || !coach) return null;
 
-  const steps = ['Date', 'Time', 'Review'] as const;
-  const activeStep = currentStep === 1 ? (selectedSlot ? 1 : 0) : currentStep === 2 ? 2 : 3;
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md animate-fade-in" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-labelledby="booking-modal-title" className="w-full max-w-4xl overflow-hidden rounded-[12px] border border-[var(--color-border-primary)] bg-[var(--color-bg-card)] shadow-2xl animate-slide-up" onClick={(e) => e.stopPropagation()}>
@@ -202,7 +199,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
         <div className="max-h-[75vh] overflow-y-auto p-8">
           {currentStep < 3 && (
             <div className="flex flex-col gap-6 lg:flex-row">
-              {/* Left — coach summary + step rail */}
+              {/* Left — coach summary */}
               <div className="flex w-full flex-col gap-6 lg:w-[264px] lg:shrink-0">
                 <div className="flex items-start gap-3">
                   {coach.profilePhoto ? (
@@ -233,31 +230,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
                     </div>
                   </div>
                 </div>
-
-                <ol className="flex flex-col gap-2">
-                  {steps.map((label, i) => {
-                    const done = activeStep > i;
-                    const current = activeStep === i;
-                    return (
-                      <li key={label} className="flex items-center gap-2">
-                        <span
-                          className={`flex h-[34px] w-[34px] items-center justify-center rounded-full border text-xs font-bold ${
-                            done
-                              ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white'
-                              : current
-                                ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
-                                : 'border-[var(--color-border-primary)] text-[var(--color-text-tertiary)]'
-                          }`}
-                        >
-                          {done ? <Check className="h-4 w-4" /> : i + 1}
-                        </span>
-                        <span className={`text-[14px] ${current || done ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-grey-mid)]'}`}>
-                          {label}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ol>
               </div>
 
               <span className="hidden w-px self-stretch bg-[var(--color-border-primary)] lg:block" />
@@ -265,12 +237,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
               {/* Right — step body */}
               <div className="flex min-w-0 flex-1 flex-col gap-6">
           {currentStep === 1 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Calendar Column */}
-              <div className="space-y-4">
-                <div className="flex min-w-0 items-center justify-between gap-2">
+              <div className="min-w-0 space-y-4">
+                <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1">
                   <h3 className="shrink-0 font-heading text-[16px] font-semibold text-[var(--color-text-primary)]">Select Date</h3>
-                  <div className="flex shrink-0 items-center gap-0.5">
+                  <div className="ml-auto flex shrink-0 items-center gap-0.5">
                     <button
                       aria-label="Previous month"
                       onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
