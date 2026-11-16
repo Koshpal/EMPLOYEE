@@ -1,15 +1,17 @@
 import { useNavigate } from 'react-router-dom';
 
-export type FinanceTab = 'Budget' | 'Goals' | 'Dues & Reminders' | 'Spent by Category';
+export type FinanceTab = 'Budget' | 'Goals' | 'Dues & Reminders' | 'Spent by Category' | 'Categories' | 'Insights';
 
 const TAB_ROUTES: Record<FinanceTab, string> = {
   Budget: '/finance/budgets',
   Goals: '/finance/goals',
   'Dues & Reminders': '/finance/dues-reminders',
   'Spent by Category': '/finance/spent-by-category',
+  Categories: '/finance/categories',
+  Insights: '/finance/spending',
 };
 
-const TAB_ORDER: FinanceTab[] = ['Budget', 'Goals', 'Dues & Reminders', 'Spent by Category'];
+const TAB_ORDER: FinanceTab[] = ['Budget', 'Goals', 'Dues & Reminders', 'Spent by Category', 'Categories', 'Insights'];
 
 /**
  * Figma "Finance tools header" tab row — shared across the Budget / Goals /

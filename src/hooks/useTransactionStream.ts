@@ -2,14 +2,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   getTransactions,
   getTransactionChanges,
+  type TransactionFilters,
 } from '../services/finance.service';
 import { TransactionStream, type StreamStatus } from '../services/transactionStream';
 import type { Transaction, TransactionStreamEvent } from '../types/finance.types';
 
-interface Filters {
-  type?: string;
-  category?: string;
-}
+type Filters = Pick<
+  TransactionFilters,
+  'type' | 'category' | 'categoryId' | 'subCategoryId' | 'budgetId' | 'uncategorized' | 'from' | 'to' | 'search'
+>;
 
 const byDateDesc = (a: Transaction, b: Transaction) =>
   new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime();
@@ -38,6 +39,23 @@ export function useTransactionStream(filters: Filters) {
     if (f.type && t.type !== f.type) return false;
     if (f.category && (t.category ?? '').toLowerCase() !== f.category.toLowerCase())
       return false;
+    if (f.categoryId && t.categoryId !== f.categoryId) return false;
+    if (f.subCategoryId && t.subCategoryId !== f.subCategoryId) return false;
+    if (f.budgetId && t.budgetId !== f.budgetId) return false;
+    if (f.uncategorized && t.categoryId) return false;
+    // Day bounds are yyyy-mm-dd in the user's local calendar.
+    const day = (d: string) => {
+      const x = new Date(d);
+      x.setMinutes(x.getMinutes() - x.getTimezoneOffset());
+      return x.toISOString().slice(0, 10);
+    };
+    if (f.from && day(t.transactionDate) < f.from) return false;
+    if (f.to && day(t.transactionDate) > f.to) return false;
+    if (f.search) {
+      const q = f.search.toLowerCase();
+      const hay = [t.description, t.senderName, t.receiverName, t.category, t.subCategory].join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
     return true;
   }, []);
 
@@ -46,6 +64,8 @@ export function useTransactionStream(filters: Filters) {
       setTransactions((prev) => {
         const idx = prev.findIndex((p) => p.id === tx.id);
         if (idx !== -1) {
+          // Re-filed or edited so that it no longer fits the active filter → drop it from view.
+          if (!matches(tx)) return prev.filter((_, i) => i !== idx);
           const next = [...prev];
           next[idx] = tx;
           return next.sort(byDateDesc);
@@ -133,7 +153,7 @@ export function useTransactionStream(filters: Filters) {
     return () => {
       cancelled = true;
     };
-  }, [filters.type, filters.category]);
+  }, [filters.type, filters.category, filters.categoryId, filters.subCategoryId, filters.budgetId, filters.uncategorized, filters.from, filters.to, filters.search]);
 
   // One long-lived stream for the page's lifetime.
   useEffect(() => {

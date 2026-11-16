@@ -29,6 +29,9 @@ const Goals = lazy(() => import('./pages/Finance/Goals'));
 const Budgets = lazy(() => import('./pages/Finance/Budgets'));
 const DuesReminders = lazy(() => import('./pages/Finance/DuesReminders'));
 const SpentByCategory = lazy(() => import('./pages/Finance/SpentByCategory'));
+const Categories = lazy(() => import('./pages/Finance/Categories'));
+const SpendingInsights = lazy(() => import('./pages/Finance/SpendingInsights'));
+const CategoryDetail = lazy(() => import('./pages/Finance/CategoryDetail'));
 
 function App() {
   return (
@@ -59,6 +62,9 @@ function App() {
         <Route path="/finance/budgets" element={<ProtectedRoute><Budgets /></ProtectedRoute>} />
         <Route path="/finance/dues-reminders" element={<ProtectedRoute><DuesReminders /></ProtectedRoute>} />
         <Route path="/finance/spent-by-category" element={<ProtectedRoute><SpentByCategory /></ProtectedRoute>} />
+        <Route path="/finance/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
+        <Route path="/finance/categories/:id" element={<ProtectedRoute><CategoryDetail /></ProtectedRoute>} />
+        <Route path="/finance/spending" element={<ProtectedRoute><SpendingInsights /></ProtectedRoute>} />
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

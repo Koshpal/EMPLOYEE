@@ -5,6 +5,7 @@ import {
   ShoppingCart, ArrowLeftRight, BookOpen, Activity, HelpCircle, Repeat,
 } from 'lucide-react';
 import type { Transaction, FinanceCategory } from '../../types/finance.types';
+import { categoryIcon } from '../../data/categoryIcons';
 
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
   Food: UtensilsCrossed,
@@ -51,6 +52,12 @@ const CATEGORY_COLORS: Record<string, string> = {
 interface TransactionItemProps {
   transaction: Transaction;
   showDate?: boolean;
+  /** The user's own category look (icon / colour) when the transaction is filed under one. */
+  meta?: { icon?: string | null; color?: string | null } | null;
+  /** Makes the row a button that opens the edit form. */
+  onEdit?: (t: Transaction) => void;
+  /** Bulk-select mode: shows a checkbox instead of acting as an edit button. */
+  selectable?: { selected: boolean; onToggle: (t: Transaction) => void };
 }
 
 function formatAmount(amount: number): string {
@@ -65,19 +72,29 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
-export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, showDate = true }) => {
-  const Icon = CATEGORY_ICONS[transaction.category] ?? HelpCircle;
-  const color = CATEGORY_COLORS[transaction.category] ?? '#7f8c8d';
+export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, showDate = true, meta, onEdit, selectable }) => {
+  const Icon = meta?.icon ? categoryIcon(meta.icon) : CATEGORY_ICONS[transaction.category] ?? HelpCircle;
+  const color = meta?.color ?? CATEGORY_COLORS[transaction.category] ?? '#7f8c8d';
   const isCredit = transaction.type === 'INCOME';
+  const uncategorised = !transaction.categoryId;
+  const label = transaction.description || transaction.receiverName || transaction.senderName || transaction.category;
 
-  return (
-    <div className="flex items-center gap-3 py-3 px-1 hover:bg-[var(--color-bg-secondary)] rounded-xl transition-colors">
+  const interactive = selectable ? () => selectable.onToggle(transaction) : onEdit ? () => onEdit(transaction) : undefined;
+
+  const baseCls = `flex w-full items-center gap-3 py-3 px-1 text-left hover:bg-[var(--color-bg-secondary)] rounded-xl transition-colors ${interactive ? 'cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-primary)]' : ''}`;
+  const content = (
+    <>
+      {selectable && (
+        <span aria-hidden="true" className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border text-[11px] ${selectable.selected ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white' : 'border-[var(--color-border-primary)]'}`}>
+          {selectable.selected ? '✓' : ''}
+        </span>
+      )}
       {/* Icon */}
       <div
         className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
         style={{ backgroundColor: `${color}18` }}
       >
-        <Icon className="w-4.5 h-4.5" style={{ color }} />
+        {React.createElement(Icon, { className: 'w-4.5 h-4.5', style: { color } })}
       </div>
 
       {/* Content */}
@@ -94,7 +111,8 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, s
         <div className="flex items-center gap-2 mt-0.5">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-bg-tertiary)] px-2 py-0.5 text-xs font-medium text-[var(--color-text-secondary)]">
             <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
-            {transaction.category}
+            {uncategorised ? 'Uncategorised' : transaction.category}
+            {transaction.subCategory && !uncategorised ? ` · ${transaction.subCategory}` : ''}
           </span>
           {transaction.isSalary && (
             <span className="text-xs px-1.5 py-0.5 rounded-full bg-[var(--color-success-bg)] text-[var(--color-success-darkest)] font-medium">
@@ -113,7 +131,18 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, s
           )}
         </div>
       </div>
-    </div>
+    </>
+  );
+
+  if (!interactive) return <div className={baseCls}>{content}</div>;
+  return selectable ? (
+    <button type="button" role="checkbox" aria-checked={selectable.selected} aria-label={`${selectable.selected ? 'Deselect' : 'Select'} ${label}`} onClick={interactive} className={baseCls}>
+      {content}
+    </button>
+  ) : (
+    <button type="button" aria-label={`Edit ${label}`} onClick={interactive} className={baseCls}>
+      {content}
+    </button>
   );
 };
 

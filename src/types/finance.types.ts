@@ -21,6 +21,12 @@ export interface Transaction {
   type: TransactionDirection;
   category: string;
   subCategory?: string | null;
+  /** The user's own category / sub-category / budget (null = uncategorised / unlinked). */
+  categoryId?: string | null;
+  subCategoryId?: string | null;
+  budgetId?: string | null;
+  budgetCategoryId?: string | null;
+  budgetSubCategoryId?: string | null;
   origin: 'MANUAL' | 'SMS' | 'BANK' | 'IMPORTED';
   mode?: PaymentMethod | null;
   description?: string | null;
@@ -230,6 +236,10 @@ export interface BudgetCategoryRow {
   colorHex: string;
   parentCategoryId: string | null;
   allottedAmount: number;
+  /** Link into the user's own taxonomy (top-level lines → category, sub lines → subcategory). */
+  categoryId?: string | null;
+  subCategoryId?: string | null;
+  scopedToSubCategories?: boolean;
 }
 
 export interface Budget {
@@ -240,16 +250,23 @@ export interface Budget {
   startDate: string;   // ISO
   endDate: string | null;
   budgetType: BudgetKind;
+  isActive?: boolean;
   categories: BudgetCategoryRow[];
+  /** Present on GET /budgets/:id and on lists requested with includeProgress. */
+  progress?: import('./spending.types').BudgetSummaryBlock;
 }
 
 /** What we send when creating/updating a budget. */
 export interface BudgetSubCategoryInput {
-  name: string;
+  name?: string;
+  /** The user's own sub-category (name then comes from it). */
+  subCategoryId?: string;
   allottedAmount: number;
 }
 export interface BudgetCategoryInput {
-  name: string;
+  name?: string;
+  /** The user's own category (name then comes from it). */
+  categoryId?: string;
   allottedAmount: number;
   colorHex?: string;
   iconResId?: string;
@@ -269,6 +286,8 @@ export type UpdateBudgetPayload = Partial<CreateBudgetPayload>;
 export interface BudgetProgressSub {
   id: string;
   name: string;
+  subCategoryId?: string | null;
+  transactionCount?: number;
   allocated: number;
   spent: number;
   remaining: number;
@@ -278,6 +297,8 @@ export interface BudgetProgressSub {
 export interface BudgetProgressCategory {
   id: string;
   category: string;
+  categoryId?: string | null;
+  transactionCount?: number;
   allocated: number;
   spent: number;
   remaining: number;
@@ -299,5 +320,14 @@ export interface BudgetProgress {
   remaining: number;
   percentageSpent: number;
   overBudget: boolean;
+  isActive?: boolean;
+  lifecycle?: import('./spending.types').BudgetLifecycle;
+  status?: import('./spending.types').BudgetStatus;
+  transactionCount?: number;
+  dailyAverage?: number;
+  projectedSpend?: number | null;
+  safeDailySpend?: number | null;
+  daysElapsed?: number;
+  daysRemaining?: number | null;
   categories: BudgetProgressCategory[];
 }

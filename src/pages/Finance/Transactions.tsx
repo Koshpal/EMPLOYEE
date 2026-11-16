@@ -1,16 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, Filter, X, Plus, ListChecks } from 'lucide-react';
 import { Layout } from '../../components/common/Layout';
 import { TransactionItem } from '../../components/finance/TransactionItem';
 import { GetAppButton } from '../../components/onboarding/GetAppButton';
 import { useTransactionStream } from '../../hooks/useTransactionStream';
+import { TransactionFormModal } from '../../components/finance/TransactionFormModal';
+import { BulkCategorizeBar } from '../../components/finance/BulkCategorizeBar';
+import { useCategories } from '../../hooks/useCategories';
 import type { Transaction } from '../../types/finance.types';
 
-const CATEGORIES: string[] = [
-  'All', 'Food', 'Travel', 'Shopping', 'Groceries', 'Bills',
-  'Entertainment', 'Healthcare', 'Subscription', 'Salary', 'EMI', 'Transfers',
-];
+const UNCATEGORISED = '__uncategorised__';
 
 const TYPE_FILTERS = ['All', 'Income', 'Expenses'] as const;
 
@@ -37,32 +38,56 @@ function groupByDate(txns: Transaction[]): [string, Transaction[]][] {
 
 export default function Transactions() {
   const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('All');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [urlParams] = useSearchParams();
+  const [categoryFilter, setCategoryFilter] = useState<string>(
+    urlParams.get('uncategorised') ? UNCATEGORISED : urlParams.get('categoryId') ?? 'All',
+  ); // 'All' | UNCATEGORISED | categoryId
   const [typeFilter, setTypeFilter] = useState<(typeof TYPE_FILTERS)[number]>('All');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<Transaction | null>(null);
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const { categories, byId } = useCategories();
+  const dateError = from && to && from > to ? 'The start date is after the end date' : '';
 
   const filters = useMemo(
     () => ({
       type:
         typeFilter === 'Income' ? 'INCOME' : typeFilter === 'Expenses' ? 'EXPENSE' : undefined,
-      category: categoryFilter !== 'All' ? categoryFilter : undefined,
+      categoryId: categoryFilter !== 'All' && categoryFilter !== UNCATEGORISED ? categoryFilter : undefined,
+      uncategorized: categoryFilter === UNCATEGORISED ? true : undefined,
+      from: !dateError && from ? from : undefined,
+      to: !dateError && to ? to : undefined,
+      search: debouncedSearch || undefined,
     }),
-    [typeFilter, categoryFilter],
+    [typeFilter, categoryFilter, from, to, dateError, debouncedSearch],
   );
 
   const { transactions, loading, loadingMore, hasMore, loadMore, status, error, retry } =
     useTransactionStream(filters);
 
-  const filtered = useMemo(() => {
-    if (!search.trim()) return transactions;
-    const q = search.toLowerCase();
-    return transactions.filter(
-      (t) =>
-        t.senderName?.toLowerCase().includes(q) ||
-        t.receiverName?.toLowerCase().includes(q) ||
-        t.description?.toLowerCase().includes(q) ||
-        t.category.toLowerCase().includes(q),
-    );
-  }, [transactions, search]);
+  const filtered = transactions;
+  const hasFilters = categoryFilter !== 'All' || typeFilter !== 'All' || !!from || !!to || !!debouncedSearch;
+  const clearFilters = () => { setCategoryFilter('All'); setTypeFilter('All'); setFrom(''); setTo(''); setSearch(''); };
+
+  const toggleSelect = (t: Transaction) =>
+    setSelected((prev) => {
+      const n = new Set(prev);
+      if (n.has(t.id)) n.delete(t.id); else n.add(t.id);
+      return n;
+    });
+  const exitSelect = () => { setSelecting(false); setSelected(new Set()); };
+  // Only expenses can be bulk-filed: the bulk call takes one category for all rows.
+  const selectedTxns = filtered.filter((t) => selected.has(t.id));
 
   const grouped = groupByDate(filtered);
   const st = STATUS_META[status] ?? STATUS_META.connecting;
@@ -84,6 +109,19 @@ export default function Transactions() {
             <span className="text-xs text-[var(--color-text-tertiary)] bg-[var(--color-bg-tertiary)] px-3 py-1 rounded-full font-medium">
               {filtered.length} shown
             </span>
+            <button
+              onClick={() => (selecting ? exitSelect() : setSelecting(true))}
+              aria-pressed={selecting}
+              className={`flex h-9 items-center gap-1.5 rounded-[8px] border px-3 text-xs font-semibold ${selecting ? 'border-[var(--color-primary)] text-[var(--color-primary)]' : 'border-[var(--color-border-primary)] text-[var(--color-text-secondary)]'}`}
+            >
+              <ListChecks className="h-4 w-4" /> {selecting ? 'Done' : 'Select'}
+            </button>
+            <button
+              onClick={() => { setEditing(null); setFormOpen(true); }}
+              className="flex h-9 items-center gap-1 rounded-[8px] bg-[var(--color-primary)] pl-2.5 pr-3.5 text-xs font-semibold text-white hover:bg-[var(--color-primary-darkest)]"
+            >
+              <Plus className="h-4 w-4" /> Add
+            </button>
           </div>
         </div>
 
@@ -120,20 +158,35 @@ export default function Transactions() {
           ))}
         </div>
 
-        {/* Category scroll filters */}
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-          {CATEGORIES.map((c) => (
+        {/* Date range */}
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <label htmlFor="tx-from" className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">From</label>
+            <input id="tx-from" type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} className="h-9 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-card)] px-2.5 text-xs" />
+          </div>
+          <div>
+            <label htmlFor="tx-to" className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">To</label>
+            <input id="tx-to" type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} className="h-9 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-card)] px-2.5 text-xs" />
+          </div>
+          {hasFilters && <button onClick={clearFilters} className="h-9 text-xs font-semibold text-[var(--color-primary)] hover:underline">Clear filters</button>}
+          {dateError && <p role="alert" className="text-xs text-[var(--color-error-dark)]">{dateError}</p>}
+        </div>
+
+        {/* Category filters — the employee's own categories */}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide" role="group" aria-label="Filter by category">
+          {[{ id: 'All', name: 'All' }, { id: UNCATEGORISED, name: 'Uncategorised' }, ...categories.filter((c) => c.isActive).map((c) => ({ id: c.id, name: c.name }))].map((c) => (
             <button
-              key={c}
-              onClick={() => setCategoryFilter(c)}
+              key={c.id}
+              onClick={() => setCategoryFilter(c.id)}
+              aria-pressed={categoryFilter === c.id}
               className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1 ${
-                categoryFilter === c
+                categoryFilter === c.id
                   ? 'bg-[var(--color-primary)]/15 text-[var(--color-primary)] border border-[var(--color-primary)]/30'
                   : 'bg-[var(--color-bg-card)] border border-[var(--color-border-primary)] text-[var(--color-text-secondary)]'
               }`}
             >
-              {categoryFilter === c && <Filter className="w-2.5 h-2.5" />}
-              {c}
+              {categoryFilter === c.id && <Filter className="w-2.5 h-2.5" />}
+              {c.name}
             </button>
           ))}
         </div>
@@ -154,13 +207,20 @@ export default function Transactions() {
         ) : grouped.length === 0 ? (
           <div className="text-center py-16 text-[var(--color-text-secondary)]">
             <Search className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">{search ? 'No transactions found' : 'No transactions yet'}</p>
+            <p className="font-medium">{hasFilters ? 'No transactions match these filters' : 'No transactions yet'}</p>
             <p className="text-xs mt-1 mb-5 text-[var(--color-text-tertiary)]">
-              {search
-                ? 'Try a different search term'
-                : 'Install the Koshpal app and your transactions import automatically from SMS.'}
+              {hasFilters
+                ? 'Try a wider date range or a different category.'
+                : 'Add one yourself, or install the Koshpal app and your transactions import automatically from SMS.'}
             </p>
-            {!search && <GetAppButton />}
+            {hasFilters ? (
+              <button onClick={clearFilters} className="rounded-[8px] border border-[var(--color-border-primary)] px-5 py-2 text-sm font-semibold text-[var(--color-primary)]">Clear filters</button>
+            ) : (
+              <div className="flex flex-col items-center gap-3">
+                <button onClick={() => { setEditing(null); setFormOpen(true); }} className="rounded-[8px] bg-[var(--color-primary)] px-5 py-2.5 text-sm font-semibold text-white">Add a transaction</button>
+                <GetAppButton />
+              </div>
+            )}
           </div>
         ) : (
           <AnimatePresence initial={false}>
@@ -179,7 +239,14 @@ export default function Transactions() {
                 </div>
                 <div className="px-4 divide-y divide-[var(--color-border-primary)]">
                   {txns.map((txn) => (
-                    <TransactionItem key={txn.id} transaction={txn} showDate={false} />
+                    <TransactionItem
+                      key={txn.id}
+                      transaction={txn}
+                      showDate={false}
+                      meta={txn.categoryId ? byId.get(txn.categoryId) : null}
+                      onEdit={(t) => { setEditing(t); setFormOpen(true); }}
+                      selectable={selecting ? { selected: selected.has(txn.id), onToggle: toggleSelect } : undefined}
+                    />
                   ))}
                 </div>
               </motion.div>
@@ -198,6 +265,15 @@ export default function Transactions() {
           </button>
         )}
       </div>
+
+      {selecting && selectedTxns.length > 0 && (
+        <BulkCategorizeBar transactions={selectedTxns} onDone={exitSelect} onCancel={exitSelect} />
+      )}
+      <TransactionFormModal
+        open={formOpen}
+        transaction={editing}
+        onClose={() => setFormOpen(false)}
+      />
     </Layout>
   );
 }

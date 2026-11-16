@@ -1,4 +1,5 @@
 import { axiosInstance } from './api';
+import { invalidateAfter } from '../hooks/useApi';
 import type {
   WellnessOverview,
   FinancialScore,
@@ -17,6 +18,7 @@ import type {
   BudgetProgress,
   CreateBudgetPayload,
   UpdateBudgetPayload,
+  Transaction,
 } from '../types/finance.types';
 
 const BASE = '/finance';
@@ -100,23 +102,81 @@ export const getSubscriptions = async (): Promise<DetectedSubscription[]> => {
 };
 
 // --- Transactions ---
-// NOTE: transactions are never created from the web. They originate on the
-// mobile app (offline-first) and sync to the backend; the web is read-only and
-// receives changes over SSE (see services/transactionStream.ts).
+// Most transactions originate on the mobile app (offline-first SMS import) and arrive over SSE
+// (see services/transactionStream.ts). The web can also record a manual transaction and re-categorise
+// any transaction — see createTransaction / updateTransaction / categorizeTransactions below.
 
-export const getTransactions = async (params?: {
+export interface TransactionFilters {
   type?: string;
+  /** legacy text "contains" filter */
   category?: string;
+  categoryId?: string;
+  subCategoryId?: string;
+  budgetId?: string;
+  uncategorized?: boolean;
+  from?: string;
+  to?: string;
+  search?: string;
   page?: number;
   limit?: number;
-}): Promise<PaginatedTransactions> => {
+}
+
+export const getTransactions = async (params?: TransactionFilters): Promise<PaginatedTransactions> => {
   const query = new URLSearchParams();
-  if (params?.type) query.set('type', params.type);
-  if (params?.category) query.set('category', params.category);
+  for (const [k, v] of Object.entries(params ?? {})) {
+    if (v === undefined || v === null || v === '' || k === 'page' || k === 'limit') continue;
+    query.set(k, String(v));
+  }
   query.set('page', String(params?.page ?? 1));
   query.set('limit', String(params?.limit ?? 50));
   const res = await axiosInstance.get(`/transactions?${query}`);
   return res.data as PaginatedTransactions;
+};
+
+/** Fields the transaction form can send. Category / sub-category / budget are all optional. */
+export interface TransactionWritePayload {
+  amount?: number;
+  type?: 'INCOME' | 'EXPENSE';
+  transactionDate?: string;
+  description?: string | null;
+  notes?: string | null;
+  receiverName?: string | null;
+  senderName?: string | null;
+  mode?: string | null;
+  categoryId?: string | null;
+  subCategoryId?: string | null;
+  budgetId?: string | null;
+  budgetCategoryId?: string | null;
+  budgetSubCategoryId?: string | null;
+}
+
+export const createTransaction = async (
+  payload: TransactionWritePayload & { amount: number; type: 'INCOME' | 'EXPENSE'; transactionDate: string },
+): Promise<Transaction> => {
+  // A client id makes a retry after a lost response idempotent on the server.
+  const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `web-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const res = await axiosInstance.post('/transactions', { id, origin: 'MANUAL', ...payload });
+  invalidateAfter('transaction');
+  return res.data as Transaction;
+};
+
+export type TransactionUpdateResult = Transaction & { warnings: string[] };
+
+export const updateTransaction = async (id: string, payload: TransactionWritePayload): Promise<TransactionUpdateResult> => {
+  const res = await axiosInstance.patch(`/transactions/${id}`, payload);
+  invalidateAfter('transaction');
+  return res.data as TransactionUpdateResult;
+};
+
+export const categorizeTransactions = async (payload: {
+  transactionIds: string[];
+  categoryId: string;
+  subCategoryId?: string | null;
+  budgetId?: string | null;
+}): Promise<{ updated: number; warnings: string[] }> => {
+  const res = await axiosInstance.post('/transactions/categorize', payload);
+  invalidateAfter('transaction');
+  return res.data;
 };
 
 /**
@@ -168,9 +228,32 @@ export const deleteGoal = async (goalId: string): Promise<void> => {
 };
 
 // --- Budgets ---
-export const getBudgets = async (): Promise<Budget[]> => {
-  const res = await axiosInstance.get('/budgets');
+export interface BudgetListFilters {
+  isActive?: boolean;
+  period?: BudgetPeriodFilter;
+  categoryId?: string;
+  status?: 'ON_TRACK' | 'NEAR_LIMIT' | 'EXCEEDED';
+  activeOn?: string;
+  includeProgress?: boolean;
+}
+type BudgetPeriodFilter = 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+
+export const getBudgets = async (filters: BudgetListFilters = {}): Promise<Budget[]> => {
+  const q = new URLSearchParams();
+  for (const [k, v] of Object.entries(filters)) if (v !== undefined && v !== '') q.set(k, String(v));
+  const res = await axiosInstance.get(`/budgets?${q}`);
   return Array.isArray(res.data) ? res.data : res.data.data ?? [];
+};
+
+/** Transactions that count towards a budget (current period by default). */
+export const getBudgetTransactions = async (
+  id: string,
+  params: { page?: number; limit?: number; from?: string; to?: string } = {},
+): Promise<PaginatedTransactions & { periodStart: string; periodEnd: string }> => {
+  const q = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== '') q.set(k, String(v));
+  const res = await axiosInstance.get(`/budgets/${id}/transactions?${q}`);
+  return res.data;
 };
 
 export const getBudget = async (id: string): Promise<Budget> => {
@@ -185,16 +268,19 @@ export const getBudgetProgress = async (id: string): Promise<BudgetProgress> => 
 
 export const createBudget = async (payload: CreateBudgetPayload): Promise<Budget> => {
   const res = await axiosInstance.post('/budgets', payload);
+  invalidateAfter('budget');
   return res.data;
 };
 
-export const updateBudget = async (id: string, payload: UpdateBudgetPayload): Promise<Budget> => {
+export const updateBudget = async (id: string, payload: UpdateBudgetPayload & { isActive?: boolean }): Promise<Budget> => {
   const res = await axiosInstance.patch(`/budgets/${id}`, payload);
+  invalidateAfter('budget');
   return res.data;
 };
 
 export const deleteBudget = async (id: string): Promise<void> => {
   await axiosInstance.delete(`/budgets/${id}`);
+  invalidateAfter('budget');
 };
 
 // --- SMS Sync ---
