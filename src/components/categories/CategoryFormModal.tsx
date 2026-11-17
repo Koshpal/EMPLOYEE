@@ -12,6 +12,8 @@ interface Props {
   /** Edit this category; omit to create a new one. */
   category?: Category | null;
   defaultType?: CategoryType;
+  /** Hide the Expense/Income switch and keep `defaultType` (e.g. when opened from the budget form). */
+  lockType?: boolean;
   /** The user's current categories — used to stop duplicates before the request is sent. */
   existing: Category[];
   onClose: () => void;
@@ -20,7 +22,7 @@ interface Props {
 
 const normalise = (s: string) => s.normalize('NFKC').trim().replace(/\s+/g, ' ').toLowerCase();
 
-export const CategoryFormModal: React.FC<Props> = ({ open, category, defaultType = 'EXPENSE', existing, onClose, onSaved }) => {
+export const CategoryFormModal: React.FC<Props> = ({ open, category, defaultType = 'EXPENSE', lockType, existing, onClose, onSaved }) => {
   const editing = !!category;
   const [name, setName] = useState('');
   const [type, setType] = useState<CategoryType>(defaultType);
@@ -108,7 +110,7 @@ export const CategoryFormModal: React.FC<Props> = ({ open, category, defaultType
           </p>
         </div>
 
-        <fieldset>
+        {!lockType && <fieldset>
           <legend className={labelCls}>Type</legend>
           <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Category type">
             {(['EXPENSE', 'INCOME'] as const).map((t) => (
@@ -124,7 +126,7 @@ export const CategoryFormModal: React.FC<Props> = ({ open, category, defaultType
             ))}
           </div>
           {editing && <p className="mt-1.5 text-xs text-[var(--color-text-tertiary)]">The type can’t change once a category exists — it would re-classify your history.</p>}
-        </fieldset>
+        </fieldset>}
 
         <fieldset>
           <legend className={labelCls}>Icon</legend>

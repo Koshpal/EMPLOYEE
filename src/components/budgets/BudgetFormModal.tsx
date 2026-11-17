@@ -1,12 +1,15 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { Plus } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal, fieldCls, labelCls } from '../common/Modal';
 import { Button } from '../ui/Button';
+import { CategoryFormModal } from '../categories/CategoryFormModal';
 import { CategoryIcon } from '../../data/categoryIcons';
 import { useCategories } from '../../hooks/useCategories';
 import { createBudget, updateBudget } from '../../services/finance.service';
 import { apiErrorMessage } from '../../utils/apiError';
 import { formatINR } from '../../utils/money';
 import type { Budget, BudgetKind, BudgetPeriod } from '../../types/finance.types';
+import type { Category } from '../../types/spending.types';
 
 interface DraftSub {
   subCategoryId: string;
@@ -55,8 +58,13 @@ const toDraft = (b?: Budget | null): DraftLine[] => {
 
 export const BudgetFormModal: React.FC<Props> = ({ open, budget, onClose, onSaved }) => {
   const editing = !!budget;
-  const { categories, initialLoading: catsLoading } = useCategories({ type: 'EXPENSE' });
+  const { categories: fetched, initialLoading: catsLoading } = useCategories({ type: 'EXPENSE' });
+  const { categories: everyCategory } = useCategories({ includeArchived: true });
+  // Categories created from inside this form show up at once, before the shared list has refetched.
+  const [justCreated, setJustCreated] = useState<Category[]>([]);
+  const categories = useMemo(() => [...fetched, ...justCreated.filter((n) => !fetched.some((c) => c.id === n.id))], [fetched, justCreated]);
   const active = useMemo(() => categories.filter((c) => c.isActive), [categories]);
+  const [newCatOpen, setNewCatOpen] = useState(false);
 
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
@@ -99,6 +107,9 @@ export const BudgetFormModal: React.FC<Props> = ({ open, budget, onClose, onSave
     if (l.scoped && l.subs.length === 0) problems.push(`Pick at least one subcategory for ${label}, or turn off “track subcategories”.`);
     if (subTotal > (Number(l.amount) || 0) + 0.001) problems.push(`Subcategory amounts exceed ${label}’s amount.`);
   }
+
+  // While the nested "New category" dialog is open, Escape / backdrop must only close that one.
+  const closeBudget = useCallback(() => { if (!newCatOpen) onClose(); }, [newCatOpen, onClose]);
 
   const toggleCategory = (id: string) =>
     setLines((prev) => (prev.some((l) => l.categoryId === id) ? prev.filter((l) => l.categoryId !== id) : [...prev, { categoryId: id, amount: '', scoped: false, subs: [] }]));
@@ -169,7 +180,8 @@ export const BudgetFormModal: React.FC<Props> = ({ open, budget, onClose, onSave
   }
 
   return (
-    <Modal open={open} onClose={onClose} busy={busy} size="lg" title={editing ? 'Edit budget' : 'New budget'}>
+    <>
+    <Modal open={open} onClose={closeBudget} busy={busy} size="lg" title={editing ? 'Edit budget' : 'New budget'}>
       <form onSubmit={submit} noValidate className="space-y-5">
         <div>
           <label htmlFor="bd-name" className={labelCls}>Name</label>
@@ -215,7 +227,7 @@ export const BudgetFormModal: React.FC<Props> = ({ open, budget, onClose, onSave
           {catsLoading ? (
             <div className="h-20 animate-pulse rounded-xl bg-[var(--color-bg-tertiary)]" />
           ) : active.length === 0 ? (
-            <p className="rounded-xl bg-[var(--color-bg-secondary)] p-4 text-sm text-[var(--color-text-secondary)]">You have no expense categories yet. Add some under Finance → Categories first.</p>
+            <p className="rounded-xl bg-[var(--color-bg-secondary)] p-4 text-sm text-[var(--color-text-secondary)]">You have no expense categories yet. Create your first one below.</p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {active.map((c) => {
@@ -228,6 +240,11 @@ export const BudgetFormModal: React.FC<Props> = ({ open, budget, onClose, onSave
                 );
               })}
             </div>
+          )}
+          {!catsLoading && (
+            <button type="button" onClick={() => setNewCatOpen(true)} className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-primary)] hover:underline">
+              <Plus className="h-3.5 w-3.5" /> New category
+            </button>
           )}
         </fieldset>
 
@@ -284,5 +301,18 @@ export const BudgetFormModal: React.FC<Props> = ({ open, budget, onClose, onSave
         </div>
       </form>
     </Modal>
+    <CategoryFormModal
+      open={open && newCatOpen}
+      defaultType="EXPENSE"
+      lockType
+      existing={everyCategory}
+      onClose={() => setNewCatOpen(false)}
+      onSaved={(saved) => {
+        if (saved.type !== 'EXPENSE') return;
+        setJustCreated((prev) => [...prev.filter((c) => c.id !== saved.id), saved]);
+        setLines((prev) => (prev.some((l) => l.categoryId === saved.id) ? prev : [...prev, { categoryId: saved.id, amount: '', scoped: false, subs: [] }]));
+      }}
+    />
+    </>
   );
 };
