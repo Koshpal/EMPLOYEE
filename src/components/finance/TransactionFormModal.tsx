@@ -96,10 +96,9 @@ export const TransactionFormModal: React.FC<Props> = ({ open, transaction, defau
   // By default a transaction counts against the budget line for ITS OWN category, and the budget gains
   // that category (₹0 allocation) if it doesn't have it yet. Naming a budget category explicitly
   // overrides that: the line then decides the category.
-  const eligibleBudgets = useMemo(
-    () => (type === 'EXPENSE' ? budgets.filter((b) => b.id === budgetId || budgetCoversDay(b, date)) : []),
-    [budgets, type, date, budgetId],
-  );
+  // Every active budget is offered (the server accepts a user-chosen budget whatever its dates);
+  // ones whose period doesn't include the transaction date are labelled in the dropdown.
+  const eligibleBudgets = useMemo(() => (type === 'EXPENSE' ? budgets : []), [budgets, type]);
   const budget = eligibleBudgets.find((b) => b.id === budgetId) ?? null;
   const lines = useMemo(() => (budget?.categories ?? []).filter((c) => !c.parentCategoryId), [budget]);
   const chosenLine: BudgetCategoryRow | null = budget ? lines.find((l) => l.id === lineId) ?? null : null;
@@ -273,7 +272,7 @@ export const TransactionFormModal: React.FC<Props> = ({ open, transaction, defau
             <label htmlFor="tx-budget" className={labelCls}>Budget <span className="font-normal normal-case text-[var(--color-text-tertiary)]">(optional)</span></label>
             <select id="tx-budget" value={budgetId} onChange={(e) => { setBudgetId(e.target.value); setLineId(''); }} className={fieldCls} disabled={budgetsApi.initialLoading}>
               <option value="">No budget</option>
-              {eligibleBudgets.map((b) => <option key={b.id} value={b.id}>{b.title}</option>)}
+              {eligibleBudgets.map((b) => <option key={b.id} value={b.id}>{b.title}{budgetCoversDay(b, date) ? '' : ' (outside its dates)'}</option>)}
             </select>
             {budgetsApi.error != null && <p role="alert" className="mt-1 text-xs text-[var(--color-error-dark)]">Couldn’t load your budgets — you can still save without one.</p>}
           </div>
