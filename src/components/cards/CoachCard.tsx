@@ -9,6 +9,8 @@ interface CoachCardProps {
   onBook: (coach: Coach) => void;
   /** Real availability for this coach; omitted while the summary is still loading. */
   availability?: CoachAvailabilitySummary;
+  /** This is the employee's assigned coaching-programme coach. */
+  isYourCoach?: boolean;
 }
 
 /** "2026-09-08" -> "Mon" (parsed as a local date, no TZ shift). */
@@ -34,7 +36,7 @@ function slotTimeRange(slot: { startTime: string; endTime: string }): string {
  * Avatar + name/subtitle + rating pill, expertise chips, an availability strip,
  * then outline "View Profile" and primary "Book Session".
  */
-export const CoachCard: React.FC<CoachCardProps> = ({ coach, onBook, availability }) => {
+export const CoachCard: React.FC<CoachCardProps> = ({ coach, onBook, availability, isYourCoach }) => {
   const navigate = useNavigate();
   const subtitle =
     coach.successRate > 0
@@ -68,6 +70,7 @@ export const CoachCard: React.FC<CoachCardProps> = ({ coach, onBook, availabilit
                   {coach.fullName}
                 </p>
                 <p className="truncate text-body-sm text-[var(--color-grey-darkest)]">{subtitle}</p>
+                {isYourCoach && <span className="mt-1 inline-block rounded-full bg-[var(--color-primary)]/10 px-2 py-0.5 text-[11px] font-semibold text-[var(--color-primary)]">Your coach</span>}
               </div>
               <span className="flex h-[25px] shrink-0 items-center gap-0.5 rounded-[12px] bg-[var(--color-bg-tertiary)] pl-1.5 pr-2">
                 <IconStar size={16} className="text-[var(--color-warning)]" />

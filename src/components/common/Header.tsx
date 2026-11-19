@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Menu, LogOut, ChevronRight, Settings as SettingsIcon } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { useAuth } from '../../context/AuthContext';
+import { NotificationBell } from './NotificationBell';
 import { IconPlus, IconSettings2 } from '../icons/figma';
 
 interface HeaderProps {
@@ -89,6 +90,8 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, title, actions, bel
               </button>
             </>
           )}
+
+          <NotificationBell buttonClass={iconBtn} />
 
           <ThemeToggle />
 

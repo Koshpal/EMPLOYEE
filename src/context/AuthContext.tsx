@@ -76,9 +76,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    await employeeService.logout(); // revokes refresh token + clears cookie
-    setUser(null);
-    window.location.href = '/login';
+    try {
+      await employeeService.logout(); // revokes refresh token + clears cookie
+    } catch {
+      /* offline or already signed out: still leave the portal rather than stay stuck on a dead button */
+    } finally {
+      setUser(null);
+      window.location.href = '/login';
+    }
   };
 
   return (

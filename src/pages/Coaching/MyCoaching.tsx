@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Layout } from '../../components/common/Layout';
-import { apiMessage, coachingOpsService, type HomeworkItem, type SharedResult } from '../../services/coachingOps.service';
+import { apiMessage, coachingOpsService, type ActionItemRow, type CoachingOverview, type HomeworkItem, type SharedResult } from '../../services/coachingOps.service';
 
-type Tab = 'shared' | 'homework' | 'reminders';
+type Tab = 'overview' | 'actions' | 'shared' | 'homework' | 'reminders';
+const fmtWhen = (iso: string) => new Date(iso).toLocaleString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' });
 const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
 const human = (k: string) => k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
 const TITLES: Record<string, string> = { EMERGENCY_FUND: 'Emergency fund', DEBT_PAYOFF: 'Debt payoff plan', EMI: 'Loan EMI', SIP: 'SIP growth', GOAL_SAVING: 'Goal saving', NET_WORTH: 'Net worth', BUDGET_SPLIT: 'Budget split', INSURANCE_COVER: 'Life cover estimate', TAX_COMPARE: 'Tax regime comparison' };
@@ -12,6 +14,94 @@ const Values = ({ value }: { value: unknown }) => {
   if (value && typeof value === 'object') return <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">{Object.entries(value).map(([k, v]) => <div key={k} className="contents"><dt className="text-sm text-[var(--color-text-tertiary)]">{human(k)}</dt><dd className="text-sm font-medium text-[var(--color-text-primary)]"><Values value={v} /></dd></div>)}</dl>;
   return <span>{typeof value === 'number' ? value.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : value == null ? '—' : String(value)}</span>;
 };
+
+
+const card = 'rounded-2xl bg-[var(--color-bg-card)] p-5 shadow-sm';
+
+function Overview({ data, error, go }: { data: CoachingOverview | null; error: string | null; go: (t: Tab) => void }) {
+  if (!data) return error ? <p role="alert" className="text-sm text-[var(--color-error-dark)]">{error}</p> : <div className="h-40 animate-pulse rounded-2xl bg-[var(--color-bg-tertiary)]" aria-busy="true" />;
+  if (!data.enrolled || !data.coach) {
+    return <section className={card}><h3 className="text-base font-semibold text-[var(--color-text-primary)]">Coaching programme</h3>
+      <p className="mt-2 text-sm text-[var(--color-text-secondary)]">You are not on a coaching programme yet. Once your organisation assigns you a coach, your progress, sessions and action plan will appear here.</p>
+      <Link to="/coaches" className="mt-4 inline-block rounded-lg border border-[var(--color-border-primary)] px-4 py-2 text-sm font-medium">Browse coaches</Link></section>;
+  }
+  const p = data.program;
+  const pct = p && p.totalSessions ? Math.min(100, Math.round((p.sessionsCompleted / p.totalSessions) * 100)) : 0;
+  const t = data.todo;
+  const todo = ([
+    { n: t.overdueActionItems, text: 'overdue action item', tab: 'actions' },
+    { n: t.openActionItems - t.overdueActionItems, text: 'action item to do', tab: 'actions' },
+    { n: t.homework, text: 'homework worksheet to complete', tab: 'homework' },
+    { n: t.resultsToConfirm, text: 'calculation to confirm', tab: 'shared' },
+  ] as { n: number; text: string; tab: Tab }[]).filter((x) => x.n > 0);
+  return (
+    <div className="flex flex-col gap-4">
+      {!data.consentActive && (
+        <div role="alert" className="rounded-2xl border border-[var(--color-warning)] bg-[var(--color-warning-bg,transparent)] p-4 text-sm text-[var(--color-text-primary)]">
+          <strong>Coaching consent is needed.</strong> Your coach cannot start a session or see your information until you accept it. <Link className="font-semibold text-[var(--color-primary)] underline" to="/coaching-consent">Review consent</Link>
+        </div>)}
+      <section className={card}>
+        <div className="flex items-center gap-4">
+          {data.coach.photo ? <img src={data.coach.photo} alt="" className="h-14 w-14 rounded-full object-cover" /> : <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-primary-lightest)] text-lg font-bold text-[var(--color-primary)]">{data.coach.name.charAt(0).toUpperCase()}</div>}
+          <div className="min-w-0 flex-1"><p className="text-xs uppercase tracking-wide text-[var(--color-text-tertiary)]">Your coach</p><p className="truncate text-base font-semibold text-[var(--color-text-primary)]">{data.coach.name}</p></div>
+        </div>
+        {p && <div className="mt-4"><div className="mb-1 flex justify-between text-sm text-[var(--color-text-secondary)]"><span>{p.name}</span><span>{p.status === 'COMPLETED' ? 'Completed' : `${p.sessionsCompleted} of ${p.totalSessions || '?'} sessions done`}</span></div>
+          <div className="h-2 overflow-hidden rounded-full bg-[var(--color-bg-tertiary)]" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}><div className="h-full bg-[var(--color-primary)]" style={{ width: `${pct}%` }} /></div></div>}
+      </section>
+      <section className={card}>
+        <h3 className="text-base font-semibold text-[var(--color-text-primary)]">Next session</h3>
+        {data.nextBooking ? (
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-[var(--color-text-primary)]">{p?.nextSessionNumber ? `Session ${p.nextSessionNumber} · ` : ''}{fmtWhen(data.nextBooking.slotStart)} IST</p>
+            <div className="flex gap-2">{data.nextBooking.meetingLink && <a href={data.nextBooking.meetingLink} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white">Join link</a>}<Link to="/sessions" className="rounded-lg border border-[var(--color-border-primary)] px-4 py-2 text-sm font-medium">Manage</Link></div></div>
+        ) : data.needsToBook ? (
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-[var(--color-text-secondary)]">{p?.nextSessionNumber ? `Session ${p.nextSessionNumber} is not booked yet.` : 'No session is booked.'}</p><Link to={`/coaches?coach=${data.coach.id}`} className="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white">Book with {data.coach.name.split(' ')[0]}</Link></div>
+        ) : <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{p?.status === 'COMPLETED' ? 'You have completed every session of the programme.' : 'Nothing booked.'}</p>}
+        {data.lastSession?.completedAt && <p className="mt-3 text-xs text-[var(--color-text-tertiary)]">Last completed: session {data.lastSession.sessionNumber}, {fmtDate(data.lastSession.completedAt)}</p>}
+      </section>
+      <section className={card}>
+        <h3 className="text-base font-semibold text-[var(--color-text-primary)]">What needs you</h3>
+        {!todo.length ? <p className="mt-2 text-sm text-[var(--color-text-secondary)]">You are all caught up.</p> : (
+          <ul className="mt-2 flex flex-col gap-1">{todo.map((x) => <li key={x.text}><button onClick={() => go(x.tab)} className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-[var(--color-bg-secondary)]"><span><strong>{x.n}</strong> {x.text}{x.n > 1 ? 's' : ''}</span><span aria-hidden className="text-[var(--color-text-tertiary)]">›</span></button></li>)}</ul>)}
+      </section>
+    </div>
+  );
+}
+
+function ActionPlan({ onChanged }: { onChanged: () => void }) {
+  const [items, setItems] = useState<ActionItemRow[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const load = useCallback(() => coachingOpsService.actionItems().then((r) => { setItems(r); setError(null); }).catch((e) => setError(apiMessage(e))), []);
+  useEffect(() => { void load(); }, [load]);
+  const toggle = async (i: ActionItemRow) => {
+    setBusy(i.id);
+    try { await coachingOpsService.setActionItemDone(i.id, i.status !== 'COMPLETED'); await load(); onChanged(); } catch (e) { setError(apiMessage(e)); } finally { setBusy(null); }
+  };
+  if (!items) return error ? <p role="alert" className="text-sm text-[var(--color-error-dark)]">{error}</p> : <div className="h-32 animate-pulse rounded-2xl bg-[var(--color-bg-tertiary)]" aria-busy="true" />;
+  if (!items.length) return <p className={`${card} text-sm text-[var(--color-text-secondary)]`}>Your coach will record the steps you agree on after each session, and they will appear here.</p>;
+  return (
+    <div className="flex flex-col gap-3">
+      {error && <p role="alert" className="rounded-xl bg-[var(--color-error-bg)] px-4 py-3 text-sm text-[var(--color-error-dark)]">{error}</p>}
+      <ul className="flex flex-col gap-3">
+        {items.map((i) => (
+          <li key={i.id} className={`${card} flex items-start gap-3`}>
+            {i.canUpdate ? <input type="checkbox" className="mt-1 h-5 w-5 shrink-0" aria-label={`Mark "${i.title}" ${i.status === 'COMPLETED' ? 'not done' : 'done'}`} checked={i.status === 'COMPLETED'} disabled={busy === i.id} onChange={() => toggle(i)} /> : <span aria-hidden className="mt-1 h-5 w-5 shrink-0 rounded-full border border-[var(--color-border-primary)]" />}
+            <div className="min-w-0 flex-1">
+              <p className={`text-sm font-medium ${i.status === 'COMPLETED' ? 'text-[var(--color-text-tertiary)] line-through' : 'text-[var(--color-text-primary)]'}`}>{i.title}</p>
+              {i.description && <p className="mt-0.5 text-sm text-[var(--color-text-secondary)]">{i.description}</p>}
+              <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--color-text-tertiary)]">
+                <span>Session {i.sessionNumber}</span>
+                {i.ownerType === 'COACH' && <span className="rounded-full bg-[var(--color-bg-tertiary)] px-2 py-0.5">Your coach is doing this</span>}
+                {i.dueDate && <span className={i.overdue ? 'font-semibold text-[var(--color-error-dark)]' : ''}>{i.overdue ? 'Overdue · ' : 'Due '}{fmtDate(i.dueDate)}</span>}
+                {i.status === 'COMPLETED' && i.completedAt && <span>Done {fmtDate(i.completedAt)}</span>}
+                {i.status === 'NOT_COMPLETED' && <span>Marked not done by your coach</span>}
+              </p>
+            </div>
+          </li>))}
+      </ul>
+    </div>
+  );
+}
 
 function Shared() {
   const [items, setItems] = useState<SharedResult[] | null>(null);
@@ -126,16 +216,29 @@ function Reminders() {
 
 /** Everything coaching-related the employee can see or do, in one place. */
 export default function MyCoaching() {
-  const [tab, setTab] = useState<Tab>('shared');
-  const tabs: [Tab, string][] = [['shared', 'Shared with you'], ['homework', 'Homework'], ['reminders', 'Reminders']];
+  const [params, setParams] = useSearchParams();
+  const initial = (params.get('tab') as Tab | null) ?? 'overview';
+  const [tab, setTabState] = useState<Tab>(['overview', 'actions', 'shared', 'homework', 'reminders'].includes(initial) ? initial : 'overview');
+  const [overview, setOverview] = useState<CoachingOverview | null>(null);
+  const [ovError, setOvError] = useState<string | null>(null);
+  const loadOverview = useCallback(() => coachingOpsService.overview().then((o) => { setOverview(o); setOvError(null); }).catch((e) => setOvError(apiMessage(e))), []);
+  useEffect(() => { void loadOverview(); }, [loadOverview]);
+  const setTab = (t: Tab) => { setTabState(t); setParams(t === 'overview' ? {} : { tab: t }, { replace: true }); if (t === 'overview') void loadOverview(); };
+
+  const count = (n?: number) => (n ? ` (${n})` : '');
+  const todo = overview?.todo;
+  const tabs: [Tab, string][] = [
+    ['overview', 'Overview'], ['actions', `Action plan${count(todo?.openActionItems)}`], ['shared', `Shared with you${count(todo?.resultsToConfirm)}`],
+    ['homework', `Homework${count(todo?.homework)}`], ['reminders', 'Reminders'],
+  ];
   return (
     <Layout title="My coaching">
       <style>{`@media print { .no-print, aside, header, nav { display: none !important; } .worksheet { box-shadow: none !important; break-inside: avoid; } }`}</style>
       <div className="mx-auto flex max-w-3xl flex-col gap-5 py-6">
-        <div role="tablist" className="no-print flex gap-1 rounded-xl bg-[var(--color-bg-tertiary)] p-1">
-          {tabs.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium ${tab === k ? 'bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-sm' : 'text-[var(--color-text-secondary)]'}`}>{l}</button>)}
+        <div role="tablist" className="no-print flex gap-1 overflow-x-auto rounded-xl bg-[var(--color-bg-tertiary)] p-1">
+          {tabs.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={`flex-1 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium ${tab === k ? 'bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-sm' : 'text-[var(--color-text-secondary)]'}`}>{l}</button>)}
         </div>
-        {tab === 'shared' ? <Shared /> : tab === 'homework' ? <Homework /> : <Reminders />}
+        {tab === 'overview' ? <Overview data={overview} error={ovError} go={setTab} /> : tab === 'actions' ? <ActionPlan onChanged={loadOverview} /> : tab === 'shared' ? <Shared /> : tab === 'homework' ? <Homework /> : <Reminders />}
       </div>
     </Layout>
   );

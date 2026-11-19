@@ -4,6 +4,7 @@ import { Layout } from '../../components/common/Layout';
 import { CoachCard } from '../../components/cards/CoachCard';
 import { BookingModal } from '../../components/modals/BookingModal';
 import { coachService, type CoachAvailabilitySummary } from '../../services/coach.service';
+import { coachingOpsService } from '../../services/coachingOps.service';
 import type { Coach } from '../../types/booking.types';
 import { IconRefresh, IconBrain, IconSettings2 } from '../../components/icons/figma';
 
@@ -12,6 +13,8 @@ const Coaches: React.FC = () => {
   const [coaches, setCoaches] = useState<Coach[]>([]);
   const [availability, setAvailability] = useState<Record<string, CoachAvailabilitySummary> | null>(null);
   const [loading, setLoading] = useState(true);
+  // The employee's assigned programme coach (null when not on the programme): shown first and labelled.
+  const [myCoachId, setMyCoachId] = useState<string | null>(null);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [selectedCoach, setSelectedCoach] = useState<Coach | null>(null);
 
@@ -40,6 +43,7 @@ const Coaches: React.FC = () => {
   };
 
   useEffect(() => { load(); }, []);
+  useEffect(() => { coachingOpsService.overview().then((o) => setMyCoachId(o.coach?.id ?? null)).catch(() => undefined); }, []);
 
   const handleBook = (coach: Coach) => {
     setSelectedCoach(coach);
@@ -95,10 +99,11 @@ const Coaches: React.FC = () => {
           </div>
         ) : coaches.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {coaches.map((coach) => (
+            {[...coaches].sort((a, b) => Number(b.id === myCoachId) - Number(a.id === myCoachId)).map((coach) => (
               <CoachCard
                 key={coach.id}
                 coach={coach}
+                isYourCoach={coach.id === myCoachId}
                 onBook={handleBook}
                 availability={availability ? availability[coach.id] ?? { nextSlot: null, days: [] } : undefined}
               />
