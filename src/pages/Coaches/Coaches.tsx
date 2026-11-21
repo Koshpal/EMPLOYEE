@@ -91,6 +91,14 @@ const Coaches: React.FC = () => {
           </div>
         </div>
 
+        {!loading && coaches.length > 0 && (
+          <p className="rounded-xl bg-[var(--color-bg-secondary)] px-4 py-3 text-sm text-[var(--color-text-secondary)]">
+            {myCoachId
+              ? 'You continue your sessions with your coach. To change coach, contact your Koshpal admin.'
+              : 'The first coach you book becomes your coach, and you continue your sessions with them. An admin confirms the match afterwards.'}
+          </p>
+        )}
+
         {loading ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {[0, 1, 2, 3, 4, 5].map((i) => (
