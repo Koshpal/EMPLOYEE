@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Layout } from '../../components/common/Layout';
 import { coachingConsentService, type ConsentState } from '../../services/coachingConsent.service';
 
@@ -69,7 +70,13 @@ export default function CoachingConsent() {
             {state.history.some((h) => h.status === 'WITHDRAWN') && <p className="mt-4 text-xs text-[var(--color-text-tertiary)]">You previously withdrew consent on {fmt(state.history.find((h) => h.withdrawnAt)?.withdrawnAt ?? null)}.</p>}
           </div>
         ) : (
-          <div className="rounded-2xl bg-[var(--color-bg-card)] p-6 text-sm text-[var(--color-text-secondary)]">Coaching consent is not available yet. Please check back soon.</div>
+          <div className="rounded-2xl bg-[var(--color-bg-card)] p-6 text-sm text-[var(--color-text-secondary)]">
+            <p>Coaching consent is not available yet. Your administrator needs to publish it before coaching can start. Please check back soon.</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button onClick={() => { setState(null); void load(); }} className="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white">Check again</button>
+              <Link to="/coaches" className="rounded-lg border border-[var(--color-border-primary)] px-4 py-2 text-sm font-semibold text-[var(--color-text-primary)]">Back to coaches</Link>
+            </div>
+          </div>
         )}
       </div>
     </Layout>

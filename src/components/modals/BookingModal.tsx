@@ -126,7 +126,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
       }
       const body = (error as { response?: { data?: { code?: string; message?: unknown } } })?.response?.data;
       const code = body?.code ?? (typeof body?.message === 'object' ? (body.message as { code?: string } | null)?.code : undefined);
-      setNeedsConsent(code === 'CONSENT_REQUIRED');
+      setNeedsConsent(code === 'CONSENT_REQUIRED'); // CONSENT_NOT_PUBLISHED has nothing to accept, so no link
       setBookingError(apiErrorMessage(error, 'Failed to book session. Please try again.'));
     } finally {
       setBookingLoading(false);
