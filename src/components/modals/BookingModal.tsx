@@ -5,6 +5,7 @@ import { Button } from '../ui/Button';
 import { coachService } from '../../services/coach.service';
 import { formatDateLocal, isPastLocal } from '../../utils/date';
 import { apiErrorMessage } from '../../utils/apiError';
+import { Link } from 'react-router-dom';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
+  const [needsConsent, setNeedsConsent] = useState(false);
   const [notes, setNotes] = useState('');
   const [datesWithSlots, setDatesWithSlots] = useState<Set<string>>(new Set());
   const slotsRequestId = useRef(0);
@@ -104,6 +106,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
     if (!selectedSlot || !coach) return;
     setBookingLoading(true);
     setBookingError(null);
+    setNeedsConsent(false);
     try {
       await coachService.bookConsultation(
         coach.id,
@@ -121,6 +124,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
       if (selectedDate) {
         await fetchSlotsForDate();
       }
+      const body = (error as { response?: { data?: { code?: string; message?: unknown } } })?.response?.data;
+      const code = body?.code ?? (typeof body?.message === 'object' ? (body.message as { code?: string } | null)?.code : undefined);
+      setNeedsConsent(code === 'CONSENT_REQUIRED');
       setBookingError(apiErrorMessage(error, 'Failed to book session. Please try again.'));
     } finally {
       setBookingLoading(false);
@@ -377,7 +383,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, coach, onClo
               </div>
 
               {bookingError && (
-                <p className="text-sm text-[var(--color-error)] bg-[var(--color-error)]/10 px-4 py-3 rounded-2xl">{bookingError}</p>
+                <p className="text-sm text-[var(--color-error)] bg-[var(--color-error)]/10 px-4 py-3 rounded-2xl">
+                  {bookingError}
+                  {needsConsent && <> <Link to="/coaching-consent" className="font-semibold underline">Review and accept the consent</Link>, then come back to book.</>}
+                </p>
               )}
             </div>
           )}
