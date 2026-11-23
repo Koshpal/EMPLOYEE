@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Layout } from '../../components/common/Layout';
-import { apiMessage, coachingOpsService, type ActionItemRow, type CoachingOverview, type HomeworkItem, type SharedResult } from '../../services/coachingOps.service';
+import { apiMessage, coachingOpsService, type ActionItemRow, type CoachingOverview, type HomeworkItem, type SharedResult, type WorksheetField } from '../../services/coachingOps.service';
 
 type Tab = 'overview' | 'actions' | 'shared' | 'homework' | 'reminders';
 const fmtWhen = (iso: string) => new Date(iso).toLocaleString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' });
@@ -145,6 +145,33 @@ function Shared() {
   );
 }
 
+/** One worksheet question. Choice and scale questions are tap-to-answer buttons (quick on a phone); the rest are text inputs. */
+function Question({ f, value, locked, onChange }: { f: WorksheetField; value: string; locked: boolean; onChange: (v: string) => void }) {
+  const title = <span className="font-medium text-[var(--color-text-primary)]">{f.label}{f.required ? ' *' : ''}</span>;
+  const help = f.help ? <span className="text-xs text-[var(--color-text-tertiary)]">{f.help}</span> : null;
+  const field = 'rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-card)] px-3 py-2 disabled:bg-[var(--color-bg-secondary)]';
+  if (f.type === 'choice' || f.type === 'scale') {
+    const options = f.type === 'scale' ? ['1', '2', '3', '4', '5'] : f.options ?? [];
+    return (
+      <div role="group" aria-label={f.label} className="flex flex-col gap-1.5 text-sm">{title}{help}
+        <div className="flex flex-wrap gap-2">
+          {options.map((o) => (
+            <button key={o} type="button" disabled={locked} aria-pressed={value === o} onClick={() => onChange(value === o ? '' : o)}
+              className={`rounded-lg border px-3 py-1.5 text-sm transition-colors disabled:cursor-default ${f.type === 'scale' ? 'min-w-[44px]' : ''} ${value === o ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white' : 'border-[var(--color-border-primary)] text-[var(--color-text-primary)] hover:border-[var(--color-primary)] disabled:hover:border-[var(--color-border-primary)]'}`}>{o}</button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <label className="flex flex-col gap-1.5 text-sm">{title}{help}
+      {f.type === 'longtext'
+        ? <textarea disabled={locked} rows={4} maxLength={4000} value={value} onChange={(e) => onChange(e.target.value)} className={field} />
+        : <input disabled={locked} inputMode={f.type === 'number' ? 'decimal' : undefined} maxLength={300} value={value} onChange={(e) => onChange(e.target.value)} className={field} />}
+    </label>
+  );
+}
+
 function Worksheet({ hw, onChanged }: { hw: HomeworkItem; onChanged: () => void }) {
   const locked = hw.status === 'SUBMITTED' || hw.status === 'REVIEWED';
   const [vals, setVals] = useState<Record<string, string>>(() => Object.fromEntries(hw.template.fields.map((f) => [f.key, hw.answers[f.key] != null ? String(hw.answers[f.key]) : ''])));
@@ -162,6 +189,7 @@ function Worksheet({ hw, onChanged }: { hw: HomeworkItem; onChanged: () => void 
   const set = (k: string, v: string) => { dirty.current = true; setVals((s) => ({ ...s, [k]: v })); };
   const submit = async () => { setBusy(true); setErr(null); try { await coachingOpsService.submit(hw.id, vals); onChanged(); } catch (e) { setErr(apiMessage(e)); } finally { setBusy(false); } };
   const missing = hw.template.fields.filter((f) => f.required && !vals[f.key]?.trim());
+  const answered = hw.template.fields.filter((f) => vals[f.key]?.trim()).length;
 
   return (
     <section className="worksheet rounded-2xl bg-[var(--color-bg-card)] p-5 shadow-sm">
@@ -169,11 +197,9 @@ function Worksheet({ hw, onChanged }: { hw: HomeworkItem; onChanged: () => void 
         <span className="rounded-full bg-[var(--color-bg-tertiary)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-text-secondary)]">{hw.status === 'REVIEWED' ? 'Reviewed' : hw.status === 'SUBMITTED' ? 'Submitted' : hw.dueDate ? `Due ${fmtDate(hw.dueDate)}` : 'No due date'}</span></div>
       {hw.template.description && <p className="text-sm text-[var(--color-text-secondary)]">{hw.template.description}</p>}
       {hw.instructions && <p className="mt-2 rounded-lg bg-[var(--color-bg-secondary)] px-3 py-2 text-sm">{hw.instructions}</p>}
-      <div className="mt-4 flex flex-col gap-4">
-        {hw.template.fields.map((f) => (
-          <label key={f.key} className="flex flex-col gap-1.5 text-sm"><span className="font-medium text-[var(--color-text-primary)]">{f.label}{f.required ? ' *' : ''}</span>
-            {f.type === 'longtext' ? <textarea disabled={locked} rows={4} maxLength={4000} value={vals[f.key]} onChange={(e) => set(f.key, e.target.value)} className="rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-card)] px-3 py-2 disabled:bg-[var(--color-bg-secondary)]" />
-              : <input disabled={locked} inputMode={f.type === 'number' ? 'decimal' : undefined} maxLength={300} value={vals[f.key]} onChange={(e) => set(f.key, e.target.value)} className="rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-card)] px-3 py-2 disabled:bg-[var(--color-bg-secondary)]" />}</label>))}
+      <p className="mt-2 text-xs text-[var(--color-text-tertiary)]">{hw.template.estimatedMinutes ? `About ${hw.template.estimatedMinutes} min · ` : ''}{answered} of {hw.template.fields.length} answered</p>
+      <div className="mt-4 flex flex-col gap-5">
+        {hw.template.fields.map((f) => <Question key={f.key} f={f} value={vals[f.key] ?? ''} locked={locked} onChange={(v) => set(f.key, v)} />)}
       </div>
       {hw.reviewNote && <p className="mt-4 rounded-lg bg-[var(--color-success-bg)] px-3 py-2 text-sm text-[var(--color-success-darkest)]"><strong>Coach feedback:</strong> {hw.reviewNote}</p>}
       {err && <p role="alert" className="mt-3 text-sm text-[var(--color-error-dark)]">{err}</p>}

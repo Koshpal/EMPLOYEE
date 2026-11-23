@@ -1,11 +1,11 @@
 import { axiosInstance as api } from './api';
 
 export interface SharedResult { id: string; tool: string; inputs: unknown; outputs: unknown; status: 'SHARED' | 'CONFIRMED'; version: number; configRef: string | null; updatedAt: string; confirmedAt: string | null }
-export interface WorksheetField { key: string; label: string; type: 'text' | 'number' | 'longtext'; required?: boolean }
+export interface WorksheetField { key: string; label: string; type: 'text' | 'number' | 'longtext' | 'choice' | 'scale'; required?: boolean; help?: string; options?: string[] }
 export interface HomeworkItem {
   id: string; status: 'ASSIGNED' | 'IN_PROGRESS' | 'SUBMITTED' | 'REVIEWED'; dueDate: string | null; instructions: string | null;
   answers: Record<string, string | number>; submittedAt: string | null; reviewNote: string | null;
-  template: { title: string; description: string | null; fields: WorksheetField[] };
+  template: { title: string; description: string | null; category?: string; estimatedMinutes?: number | null; fields: WorksheetField[] };
 }
 export interface CoachingOverview {
   enrolled: boolean; consentActive: boolean;
