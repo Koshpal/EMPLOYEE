@@ -54,8 +54,10 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, title, actions, bel
   const iconBtn =
     'flex h-10 items-center justify-center rounded-[8px] border border-[var(--color-border-primary)] px-2.5 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)] transition-colors';
 
+  // No overflow-hidden on the header: the account menu and notification dropdown are absolutely positioned
+  // inside this card and would be clipped by it.
   return (
-    <header className="flex flex-col gap-6 overflow-hidden rounded-[16px] bg-[var(--color-bg-card)] p-4 shadow-[var(--shadow-drop-low)]">
+    <header className="relative z-30 flex flex-col gap-6 rounded-[16px] bg-[var(--color-bg-card)] p-4 shadow-[var(--shadow-drop-low)]">
       <div className="flex items-center gap-4">
         <button
           onClick={onMenuClick}
