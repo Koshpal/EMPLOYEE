@@ -5,7 +5,7 @@ import { Button } from '../ui/Button';
 import { CategoryIcon } from '../../data/categoryIcons';
 import { TransactionItem } from '../finance/TransactionItem';
 import { useApi } from '../../hooks/useApi';
-import { useCategories } from '../../hooks/useCategories';
+import { categoryKey, useCategories } from '../../hooks/useCategories';
 import { getBudgetDetailInsight } from '../../services/spending.service';
 import { getBudgetTransactions } from '../../services/finance.service';
 import { formatINR } from '../../utils/money';
@@ -37,7 +37,7 @@ interface Props {
 
 export const BudgetDetailPanel: React.FC<Props> = ({ budgetId, onEdit, onToggleArchive, onDelete, onAddExpense, onEditTransaction }) => {
   const { data, initialLoading, error, reload } = useApi<BudgetDetailInsight>(`insights/budget/${budgetId}`, () => getBudgetDetailInsight(budgetId));
-  const { byId } = useCategories({ includeArchived: true });
+  const { byName, forTransaction } = useCategories({ includeArchived: true });
   const [openLine, setOpenLine] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const txApi = useApi(`tx/budget/${budgetId}/${page}`, () => getBudgetTransactions(budgetId, { page, limit: 10 }));
@@ -135,7 +135,7 @@ export const BudgetDetailPanel: React.FC<Props> = ({ budgetId, onEdit, onToggleA
         <h3 className="font-grotesque text-[16px] font-medium text-[var(--color-black-mid)]">Categories</h3>
         {b.lines.length === 0 && <p className="rounded-xl border border-[var(--color-border-primary)] p-4 text-sm text-[var(--color-text-secondary)]">This budget has no categories yet. Edit it to add some.</p>}
         {b.lines.map((l) => {
-          const cat = l.categoryId ? byId.get(l.categoryId) : undefined;
+          const cat = byName.get(categoryKey('EXPENSE', l.name));
           const lst = l.utilisationPct >= 100 ? STATUS_STYLE.EXCEEDED : l.utilisationPct >= 80 ? STATUS_STYLE.NEAR_LIMIT : STATUS_STYLE.ON_TRACK;
           const open = openLine === l.lineId;
           return (
@@ -226,7 +226,7 @@ export const BudgetDetailPanel: React.FC<Props> = ({ budgetId, onEdit, onToggleA
           <>
             <div className="divide-y divide-[var(--color-border-primary)]">
               {txApi.data.transactions.map((t) => (
-                <TransactionItem key={t.id} transaction={t} meta={t.categoryId ? byId.get(t.categoryId) : null} onEdit={onEditTransaction} />
+                <TransactionItem key={t.id} transaction={t} meta={forTransaction(t)} onEdit={onEditTransaction} />
               ))}
             </div>
             {(page > 1 || txApi.data.hasMore) && (

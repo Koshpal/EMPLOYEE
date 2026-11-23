@@ -118,7 +118,7 @@ export default function CategoryDetail() {
                   </Card>
                 )}
 
-                <Card title="Recent transactions" aside={<Link to={`/finance/transactions?categoryId=${d.category.id}`} className="text-xs font-semibold text-[var(--color-primary)]">See all</Link>}>
+                <Card title="Recent transactions" aside={<Link to={`/finance/transactions?category=${encodeURIComponent(d.category.name)}`} className="text-xs font-semibold text-[var(--color-primary)]">See all</Link>}>
                   <ul className="divide-y divide-[var(--color-border-primary)]">
                     {d.recentTransactions.map((t) => (
                       <li key={t.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">

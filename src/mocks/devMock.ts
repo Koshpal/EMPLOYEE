@@ -571,7 +571,7 @@ const routes: Route[] = [
     const limit = Number(cfg.params?.limit ?? 50);
     let list = transactions;
     if (cfg.params?.type) list = list.filter((t) => t.type === cfg.params.type);
-    if (cfg.params?.category) list = list.filter((t) => t.category === cfg.params.category);
+    if (cfg.params?.category) list = list.filter((t) => String(t.category).toLowerCase() === String(cfg.params.category).toLowerCase());
     const start = (page - 1) * limit;
     return {
       transactions: list.slice(start, start + limit),

@@ -16,13 +16,13 @@ export const SALARY = cat({ id: 'c-sal', name: 'Salary', type: 'INCOME' });
 const iso = (d: string) => new Date(`${d}T00:00:00`).toISOString();
 export const FOOD_BUDGET: Budget = {
   id: 'b-food', title: 'Food plan', amount: 10000, period: 'MONTHLY', startDate: iso('2020-01-01'), endDate: null, budgetType: 'RECURRING', isActive: true,
-  categories: [{ id: 'bl-food', name: 'Food & Dining', iconResId: null, colorHex: '#f60', parentCategoryId: null, allottedAmount: 10000, categoryId: 'c-food', scopedToSubCategories: false }],
+  categories: [{ id: 'bl-food', name: 'Food & Dining', iconResId: null, colorHex: '#f60', parentCategoryId: null, allottedAmount: 10000, scopedToSubCategories: false }],
 };
 
 export const MULTI_BUDGET: Budget = {
   id: 'b-multi', title: 'Monthly Budget', amount: 20000, period: 'MONTHLY', startDate: iso('2020-01-01'), endDate: null, budgetType: 'RECURRING', isActive: true,
   categories: [
-    { id: 'bl-m-food', name: 'Food & Dining', iconResId: null, colorHex: '#f60', parentCategoryId: null, allottedAmount: 10000, categoryId: 'c-food', scopedToSubCategories: false },
-    { id: 'bl-m-home', name: 'Housing', iconResId: null, colorHex: '#06f', parentCategoryId: null, allottedAmount: 10000, categoryId: 'c-home', scopedToSubCategories: false },
+    { id: 'bl-m-food', name: 'Food & Dining', iconResId: null, colorHex: '#f60', parentCategoryId: null, allottedAmount: 10000, scopedToSubCategories: false },
+    { id: 'bl-m-home', name: 'Housing', iconResId: null, colorHex: '#06f', parentCategoryId: null, allottedAmount: 10000, scopedToSubCategories: false },
   ],
 };

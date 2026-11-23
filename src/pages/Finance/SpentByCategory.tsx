@@ -11,7 +11,8 @@ import { SummarySection, PeriodButton } from '../../components/dashboard/widgets
 import { SUMMARY_STYLES } from '../../components/dashboard/helpers';
 import { HeaderSettingsButton } from '../../components/common/HeaderSettingsButton';
 import { FinanceTabs } from '../../components/finance/FinanceTabs';
-import { categoryByName, iconFor } from '../../data/financeCategories';
+import { categoryIcon } from '../../data/categoryIcons';
+import { nameKey } from '../../hooks/useCategories';
 
 const fadeUp = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 } };
 
@@ -38,14 +39,14 @@ export default function SpentByCategory() {
   const budgets: Budget[] = useMemo(() => budgetsRes.data ?? [], [budgetsRes.data]);
   const loading = analyticsRes.loading || budgetsRes.loading;
 
-  // Alloted amount per category name, summed across every active budget's
+  // Alloted amount per category NAME, summed across every active budget's
   // top-level categories — this is the "budgeted" side of the comparison.
   const allotedByCategory = useMemo(() => {
     const map = new Map<string, number>();
     for (const b of budgets) {
       for (const c of b.categories ?? []) {
-        if (c.parentCategoryId) continue; // sub-categories don't get their own row here
-        map.set(c.name, (map.get(c.name) ?? 0) + c.allottedAmount);
+        if (c.parentCategoryId) continue; // sub-lines have no row here
+        map.set(nameKey(c.name), (map.get(nameKey(c.name)) ?? 0) + c.allottedAmount);
       }
     }
     return map;
@@ -55,12 +56,11 @@ export default function SpentByCategory() {
     const spent = analytics?.topCategories ?? [];
     return spent
       .map((c) => {
-        const meta = categoryByName(c.name);
-        const alloted = allotedByCategory.get(c.name) ?? 0;
+        const alloted = allotedByCategory.get(nameKey(c.name)) ?? 0;
         return {
           name: c.name,
-          color: meta?.color ?? '#334eac',
-          icon: meta?.icon ?? 'category',
+          color: c.color ?? '#334eac',
+          icon: c.icon ?? '',
           spent: c.amount,
           alloted,
           pct: alloted > 0 ? Math.min(100, Math.round((c.amount / alloted) * 100)) : 0,
@@ -173,7 +173,7 @@ export default function SpentByCategory() {
             ) : (
               <div className="flex flex-col gap-3">
                 {rows.map((r) => {
-                  const Icon = iconFor(r.icon);
+                  const Icon = categoryIcon(r.icon);
                   const over = r.alloted > 0 && r.spent > r.alloted;
                   const left = Math.max(0, r.alloted - r.spent);
                   return (

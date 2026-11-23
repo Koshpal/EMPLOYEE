@@ -1,53 +1,10 @@
 import React from 'react';
-import {
-  UtensilsCrossed, Car, ShoppingBag, Zap, Film, Heart, TrendingUp,
-  Banknote, CreditCard, Smartphone, Lightbulb, Fuel,
-  ShoppingCart, ArrowLeftRight, BookOpen, Activity, HelpCircle, Repeat,
-} from 'lucide-react';
-import type { Transaction, FinanceCategory } from '../../types/finance.types';
+import { HelpCircle } from 'lucide-react';
+import type { Transaction } from '../../types/finance.types';
 import { categoryIcon } from '../../data/categoryIcons';
 
-const CATEGORY_ICONS: Record<string, React.ElementType> = {
-  Food: UtensilsCrossed,
-  Travel: Car,
-  Shopping: ShoppingBag,
-  Bills: Zap,
-  Entertainment: Film,
-  Healthcare: Heart,
-  Investments: TrendingUp,
-  Salary: Banknote,
-  EMI: CreditCard,
-  Subscription: Repeat,
-  Recharge: Smartphone,
-  Utilities: Lightbulb,
-  Fuel: Fuel,
-  Groceries: ShoppingCart,
-  Transfers: ArrowLeftRight,
-  Education: BookOpen,
-  Wellness: Activity,
-  Uncategorized: HelpCircle,
-};
-
-const CATEGORY_COLORS: Record<string, string> = {
-  Food: '#f5a038',
-  Travel: '#334eac',
-  Shopping: '#9b59b6',
-  Bills: '#e74c3c',
-  Entertainment: '#1abc9c',
-  Healthcare: '#e91e63',
-  Investments: '#2ecc71',
-  Salary: '#80b597',
-  EMI: '#e74c3c',
-  Subscription: '#3498db',
-  Recharge: '#17a2b8',
-  Utilities: '#f39c12',
-  Fuel: '#e67e22',
-  Groceries: '#27ae60',
-  Transfers: '#95a5a6',
-  Education: '#8e44ad',
-  Wellness: '#16a085',
-  Uncategorized: '#7f8c8d',
-};
+/** Look of a transaction that is not filed under one of the user's categories. */
+const NEUTRAL_COLOR = '#7f8c8d';
 
 interface TransactionItemProps {
   transaction: Transaction;
@@ -73,10 +30,10 @@ function formatDate(dateStr: string): string {
 }
 
 export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, showDate = true, meta, onEdit, selectable }) => {
-  const Icon = meta?.icon ? categoryIcon(meta.icon) : CATEGORY_ICONS[transaction.category] ?? HelpCircle;
-  const color = meta?.color ?? CATEGORY_COLORS[transaction.category] ?? '#7f8c8d';
+  const Icon = meta?.icon ? categoryIcon(meta.icon) : HelpCircle;
+  const color = meta?.color ?? NEUTRAL_COLOR;
   const isCredit = transaction.type === 'INCOME';
-  const uncategorised = !transaction.categoryId;
+  const uncategorised = !transaction.category || transaction.category.trim().toLowerCase() === 'uncategorized';
   const label = transaction.description || transaction.receiverName || transaction.senderName || transaction.category;
 
   const interactive = selectable ? () => selectable.onToggle(transaction) : onEdit ? () => onEdit(transaction) : undefined;
@@ -146,5 +103,4 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, s
   );
 };
 
-export { formatAmount, CATEGORY_COLORS, CATEGORY_ICONS };
-export type { FinanceCategory };
+export { formatAmount };

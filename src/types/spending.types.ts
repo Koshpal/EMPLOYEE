@@ -193,7 +193,7 @@ export interface TrendsInsight {
   series: TrendPoint[];
   total: number;
   averagePerBucket: number;
-  categories?: Array<{ categoryId: string | null; name: string; color: string | null; points: Array<{ bucketStart: string; total: number }> }>;
+  categories?: Array<{ categoryId: string | null; categoryLocalId?: string | null; name: string; color: string | null; points: Array<{ bucketStart: string; total: number }> }>;
   buckets?: Array<{ bucketStart: string; label: string }>;
 }
 
@@ -203,8 +203,7 @@ export interface RecentTxn {
   type: 'INCOME' | 'EXPENSE';
   description: string | null;
   transactionDate: string;
-  categoryId: string | null;
-  subCategoryId: string | null;
+  category: string;
   subCategory: string | null;
 }
 
@@ -229,7 +228,6 @@ export interface CategoryDetailInsight {
 // ── budgets ──────────────────────────────────────────────────────────────────
 export interface BudgetLineInsight {
   lineId: string;
-  categoryId: string | null;
   name: string;
   color: string | null;
   icon: string | null;
@@ -241,7 +239,6 @@ export interface BudgetLineInsight {
   transactionCount: number;
   subCategories: Array<{
     lineId: string;
-    subCategoryId: string | null;
     name: string;
     allocated: number;
     spent: number;

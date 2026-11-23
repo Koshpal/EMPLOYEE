@@ -60,11 +60,11 @@ describe('TransactionFormModal', () => {
     const { user } = open();
     await waitFor(() => expect(optionsOf(catSelect())).toContain('Food & Dining'));
     expect(subSelect()).toBeDisabled();
-    await user.selectOptions(catSelect(), 'c-food');
+    await user.selectOptions(catSelect(), 'Food & Dining');
     expect(optionsOf(subSelect())).toEqual(expect.arrayContaining(['Groceries', 'Eating out']));
-    await user.selectOptions(subSelect(), 's-groc');
-    expect(subSelect().value).toBe('s-groc');
-    await user.selectOptions(catSelect(), 'c-travel');
+    await user.selectOptions(subSelect(), 'Groceries');
+    expect(subSelect().value).toBe('Groceries');
+    await user.selectOptions(catSelect(), 'Transport');
     expect(subSelect().value).toBe('');
     expect(optionsOf(subSelect())).toContain('Fuel');
     expect(optionsOf(subSelect())).not.toContain('Groceries');
@@ -74,16 +74,16 @@ describe('TransactionFormModal', () => {
     getBudgets.mockResolvedValue([MULTI_BUDGET]);
     const { user } = open();
     await waitFor(() => expect(optionsOf(catSelect())).toContain('Food & Dining'));
-    await user.selectOptions(catSelect(), 'c-travel');
+    await user.selectOptions(catSelect(), 'Transport');
     await waitFor(() => expect(within(screen.getByLabelText(/^Budget$|^Budget \(/)).getByRole('option', { name: 'Monthly Budget' })).toBeInTheDocument());
     await user.selectOptions(screen.getByLabelText(/^Budget \(optional\)|^Budget$/), 'b-multi');
     // default: "Same as category" — the category stays the user's choice
     expect(await screen.findByLabelText(/Budget category/)).toHaveValue('');
-    expect(catSelect().value).toBe('c-travel');
+    expect(catSelect().value).toBe('Transport');
     expect(catSelect()).not.toBeDisabled();
     // naming a budget category makes the line decide the category
     await user.selectOptions(screen.getByLabelText(/Budget category/), 'bl-m-food');
-    await waitFor(() => expect(catSelect().value).toBe('c-food'));
+    await waitFor(() => expect(catSelect().value).toBe('Food & Dining'));
     expect(catSelect()).toBeDisabled();
     // back to "Same as category" gives the choice back
     await user.selectOptions(screen.getByLabelText(/Budget category/), '');
@@ -95,9 +95,9 @@ describe('TransactionFormModal', () => {
     const { user } = open();
     await waitFor(() => expect(optionsOf(catSelect())).toContain('Food & Dining'));
     await user.selectOptions(await screen.findByLabelText(/^Budget/), 'b-multi');
-    await user.selectOptions(catSelect(), 'c-travel');
+    await user.selectOptions(catSelect(), 'Transport');
     expect(await screen.findByText(/“Transport” isn’t in “Monthly Budget” yet — it will be added/)).toBeInTheDocument();
-    await user.selectOptions(catSelect(), 'c-food');
+    await user.selectOptions(catSelect(), 'Food & Dining');
     expect(await screen.findByText(/Counts against “Food & Dining” in this budget/)).toBeInTheDocument();
   });
 
@@ -118,12 +118,12 @@ describe('TransactionFormModal', () => {
     await waitFor(() => expect(optionsOf(catSelect())).toContain('Food & Dining'));
     await user.type(screen.getByLabelText('Amount (₹)'), '250.50');
     await user.selectOptions(await screen.findByLabelText(/^Budget/), 'b-multi');
-    await user.selectOptions(catSelect(), 'c-travel');
-    await user.selectOptions(subSelect(), 's-fuel');
+    await user.selectOptions(catSelect(), 'Transport');
+    await user.selectOptions(subSelect(), 'Fuel');
     await user.click(screen.getByRole('button', { name: 'Add transaction' }));
     await waitFor(() => expect(onClose).toHaveBeenCalled());
     const sent = createTransaction.mock.calls[0][0];
-    expect(sent).toMatchObject({ amount: 250.5, type: 'EXPENSE', categoryId: 'c-travel', subCategoryId: 's-fuel', budgetId: 'b-multi', budgetCategoryId: null });
+    expect(sent).toMatchObject({ amount: 250.5, type: 'EXPENSE', category: 'Transport', subCategory: 'Fuel', budgetId: 'b-multi', budgetCategoryId: null });
   });
 
   it('sends the budget category when the user names one', async () => {
@@ -133,10 +133,10 @@ describe('TransactionFormModal', () => {
     await user.type(screen.getByLabelText('Amount (₹)'), '99');
     await user.selectOptions(await screen.findByLabelText(/^Budget/), 'b-food');
     await user.selectOptions(await screen.findByLabelText(/Budget category/), 'bl-food');
-    await waitFor(() => expect(catSelect().value).toBe('c-food'));
+    await waitFor(() => expect(catSelect().value).toBe('Food & Dining'));
     await user.click(screen.getByRole('button', { name: 'Add transaction' }));
     await waitFor(() => expect(onClose).toHaveBeenCalled());
-    expect(createTransaction.mock.calls[0][0]).toMatchObject({ categoryId: 'c-food', budgetId: 'b-food', budgetCategoryId: 'bl-food' });
+    expect(createTransaction.mock.calls[0][0]).toMatchObject({ category: 'Food & Dining', budgetId: 'b-food', budgetCategoryId: 'bl-food' });
   });
 
   it('income never carries a budget', async () => {
@@ -159,17 +159,17 @@ describe('TransactionFormModal', () => {
   });
 
   it('bank-reported amount, date and type are read-only when editing an SMS transaction, but filing is allowed', async () => {
-    const t = { id: 't1', amount: 499, type: 'EXPENSE', origin: 'SMS', category: 'Uncategorized', categoryId: null, transactionDate: new Date().toISOString(), description: 'Swiggy' } as unknown as Transaction;
+    const t = { id: 't1', amount: 499, type: 'EXPENSE', origin: 'SMS', category: 'Uncategorized', transactionDate: new Date().toISOString(), description: 'Swiggy' } as unknown as Transaction;
     updateTransaction.mockImplementation(async (_id, p) => ({ ...t, ...p, warnings: [] }));
     const { user, onClose } = open({ transaction: t });
     expect(screen.getByLabelText('Amount (₹)')).toBeDisabled();
     expect(screen.getByLabelText('Expense')).toBeDisabled();
     await waitFor(() => expect(optionsOf(catSelect())).toContain('Food & Dining'));
-    await user.selectOptions(catSelect(), 'c-food');
+    await user.selectOptions(catSelect(), 'Food & Dining');
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     await waitFor(() => expect(onClose).toHaveBeenCalled());
     const [, payload] = updateTransaction.mock.calls[0];
-    expect(payload).toMatchObject({ categoryId: 'c-food' });
+    expect(payload).toMatchObject({ category: 'Food & Dining' });
     expect(payload).not.toHaveProperty('amount');
     expect(payload).not.toHaveProperty('transactionDate');
   });

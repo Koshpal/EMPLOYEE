@@ -41,8 +41,8 @@ export default function Transactions() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [urlParams] = useSearchParams();
   const [categoryFilter, setCategoryFilter] = useState<string>(
-    urlParams.get('uncategorised') ? UNCATEGORISED : urlParams.get('categoryId') ?? 'All',
-  ); // 'All' | UNCATEGORISED | categoryId
+    urlParams.get('uncategorised') ? UNCATEGORISED : urlParams.get('category') ?? 'All',
+  ); // 'All' | UNCATEGORISED | a category NAME
   const [typeFilter, setTypeFilter] = useState<(typeof TYPE_FILTERS)[number]>('All');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -56,14 +56,14 @@ export default function Transactions() {
     return () => clearTimeout(t);
   }, [search]);
 
-  const { categories, byId } = useCategories();
+  const { categories, forTransaction } = useCategories();
   const dateError = from && to && from > to ? 'The start date is after the end date' : '';
 
   const filters = useMemo(
     () => ({
       type:
         typeFilter === 'Income' ? 'INCOME' : typeFilter === 'Expenses' ? 'EXPENSE' : undefined,
-      categoryId: categoryFilter !== 'All' && categoryFilter !== UNCATEGORISED ? categoryFilter : undefined,
+      category: categoryFilter !== 'All' && categoryFilter !== UNCATEGORISED ? categoryFilter : undefined,
       uncategorized: categoryFilter === UNCATEGORISED ? true : undefined,
       from: !dateError && from ? from : undefined,
       to: !dateError && to ? to : undefined,
@@ -174,7 +174,7 @@ export default function Transactions() {
 
         {/* Category filters — the employee's own categories */}
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide" role="group" aria-label="Filter by category">
-          {[{ id: 'All', name: 'All' }, { id: UNCATEGORISED, name: 'Uncategorised' }, ...categories.filter((c) => c.isActive).map((c) => ({ id: c.id, name: c.name }))].map((c) => (
+          {[{ id: 'All', name: 'All' }, { id: UNCATEGORISED, name: 'Uncategorised' }, ...categories.filter((c) => c.isActive).map((c) => ({ id: c.name, name: c.name }))].map((c) => (
             <button
               key={c.id}
               onClick={() => setCategoryFilter(c.id)}
@@ -243,7 +243,7 @@ export default function Transactions() {
                       key={txn.id}
                       transaction={txn}
                       showDate={false}
-                      meta={txn.categoryId ? byId.get(txn.categoryId) : null}
+                      meta={forTransaction(txn)}
                       onEdit={(t) => { setEditing(t); setFormOpen(true); }}
                       selectable={selecting ? { selected: selected.has(txn.id), onToggle: toggleSelect } : undefined}
                     />

@@ -10,7 +10,6 @@ import { Skeleton } from '../../components/common/Skeleton';
 import { useAsync } from '../../hooks/useAsync';
 import { getAnalyticsOverview, getSpendingTrends } from '../../services/finance.service';
 import type { AnalyticsOverview, MonthlyTrend } from '../../types/finance.types';
-import { CATEGORY_COLORS } from '../../components/finance/TransactionItem';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -57,7 +56,7 @@ export default function Analytics() {
   const pieData = (analytics?.topCategories ?? []).map((c) => ({
     name: c.name,
     value: Math.round(c.amount),
-    color: (CATEGORY_COLORS as Record<string, string>)[c.name] ?? '#7f8c8d',
+    color: c.color ?? '#7f8c8d',
   }));
 
   const weeklyData = (analytics?.weeklyBreakdown ?? []).map((w) => ({

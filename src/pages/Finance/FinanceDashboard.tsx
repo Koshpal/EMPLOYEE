@@ -18,7 +18,6 @@ import {
   getConsent, generateInsights, calculateScore, getGoals,
 } from '../../services/finance.service';
 import type { WellnessOverview, FinancialScore, FinancialInsight, Transaction, AnalyticsOverview, FinancialGoal, MonthlyTrend } from '../../types/finance.types';
-import { CATEGORY_COLORS } from '../../components/finance/TransactionItem';
 
 const fadeUp = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 } };
 
@@ -90,7 +89,7 @@ export default function FinanceDashboard() {
   const pieData = (analytics?.topCategories ?? []).slice(0, 6).map((c) => ({
     name: c.name,
     value: Math.round(c.amount),
-    color: (CATEGORY_COLORS as Record<string, string>)[c.name] ?? '#7f8c8d',
+    color: c.color ?? '#7f8c8d',
   }));
 
   return (

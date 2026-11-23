@@ -4,7 +4,7 @@ import { Modal, fieldCls, labelCls } from '../common/Modal';
 import { Button } from '../ui/Button';
 import { CategoryFormModal } from '../categories/CategoryFormModal';
 import { CategoryIcon } from '../../data/categoryIcons';
-import { useCategories } from '../../hooks/useCategories';
+import { nameKey, useCategories } from '../../hooks/useCategories';
 import { createBudget, updateBudget } from '../../services/finance.service';
 import { apiErrorMessage } from '../../utils/apiError';
 import { formatINR } from '../../utils/money';
@@ -12,14 +12,14 @@ import type { Budget, BudgetKind, BudgetPeriod } from '../../types/finance.types
 import type { Category } from '../../types/spending.types';
 
 interface DraftSub {
-  subCategoryId: string;
+  /** the sub-category NAME (unique within its category) */
+  name: string;
   amount: string;
   existingId?: string;
 }
 interface DraftLine {
-  /** the user's category; absent for an old line that only has a name */
-  categoryId?: string;
-  legacyName?: string;
+  /** the category NAME — the user's category names are unique, so the name is the key */
+  name: string;
   amount: string;
   scoped: boolean;
   subs: DraftSub[];
@@ -46,13 +46,12 @@ const toDraft = (b?: Budget | null): DraftLine[] => {
     .filter((c) => !c.parentCategoryId)
     .map((top) => ({
       existingId: top.id,
-      categoryId: top.categoryId ?? undefined,
-      legacyName: top.categoryId ? undefined : top.name,
+      name: top.name,
       amount: String(top.allottedAmount),
       scoped: !!top.scopedToSubCategories,
       subs: all
-        .filter((s) => s.parentCategoryId === top.id && s.subCategoryId)
-        .map((s) => ({ subCategoryId: s.subCategoryId as string, amount: String(s.allottedAmount), existingId: s.id })),
+        .filter((s) => s.parentCategoryId === top.id)
+        .map((s) => ({ name: s.name, amount: String(s.allottedAmount), existingId: s.id })),
     }));
 };
 
@@ -102,7 +101,7 @@ export const BudgetFormModal: React.FC<Props> = ({ open, budget, onClose, onSave
   if (end && start && end < start) problems.push('The end date is before the start date.');
   if (allocated > total + 0.001) problems.push(`Category amounts (${formatINR(allocated)}) are more than the total (${formatINR(total)}).`);
   for (const l of lines) {
-    const label = l.categoryId ? active.find((c) => c.id === l.categoryId)?.name ?? categories.find((c) => c.id === l.categoryId)?.name : l.legacyName;
+    const label = l.name;
     const subTotal = l.subs.reduce((s, x) => s + (Number(x.amount) || 0), 0);
     if (l.scoped && l.subs.length === 0) problems.push(`Pick at least one subcategory for ${label}, or turn off “track subcategories”.`);
     if (subTotal > (Number(l.amount) || 0) + 0.001) problems.push(`Subcategory amounts exceed ${label}’s amount.`);
@@ -111,8 +110,8 @@ export const BudgetFormModal: React.FC<Props> = ({ open, budget, onClose, onSave
   // While the nested "New category" dialog is open, Escape / backdrop must only close that one.
   const closeBudget = useCallback(() => { if (!newCatOpen) onClose(); }, [newCatOpen, onClose]);
 
-  const toggleCategory = (id: string) =>
-    setLines((prev) => (prev.some((l) => l.categoryId === id) ? prev.filter((l) => l.categoryId !== id) : [...prev, { categoryId: id, amount: '', scoped: false, subs: [] }]));
+  const toggleCategory = (catName: string) =>
+    setLines((prev) => (prev.some((l) => nameKey(l.name) === nameKey(catName)) ? prev.filter((l) => nameKey(l.name) !== nameKey(catName)) : [...prev, { name: catName, amount: '', scoped: false, subs: [] }]));
   const patch = (key: DraftLine, p: Partial<DraftLine>) => setLines((prev) => prev.map((l) => (l === key ? { ...l, ...p } : l)));
 
   async function submit(e: React.FormEvent) {
@@ -135,17 +134,17 @@ export const BudgetFormModal: React.FC<Props> = ({ open, budget, onClose, onSave
         saved = await createBudget({
           ...common,
           categories: lines.map((l) => ({
-            categoryId: l.categoryId,
+            name: l.name,
             allottedAmount: Number(l.amount) || 0,
             scopedToSubCategories: l.scoped,
-            ...(l.subs.length ? { subCategories: l.subs.map((s) => ({ subCategoryId: s.subCategoryId, allottedAmount: Number(s.amount) || 0 })) } : {}),
+            ...(l.subs.length ? { subCategories: l.subs.map((s) => ({ name: s.name, allottedAmount: Number(s.amount) || 0 })) } : {}),
           })) as never,
         });
       } else {
         // Pass 1: lines (brand-new lines get their real ids back).
         const flatTop = lines.map((l) => ({
           ...(l.existingId ? { id: l.existingId } : {}),
-          ...(l.categoryId ? { categoryId: l.categoryId } : { name: l.legacyName }),
+          name: l.name,
           allottedAmount: Number(l.amount) || 0,
           scopedToSubCategories: l.scoped,
         }));
@@ -153,7 +152,7 @@ export const BudgetFormModal: React.FC<Props> = ({ open, budget, onClose, onSave
           lines.flatMap((l) => {
             const parent = parentOf(l);
             return parent
-              ? l.subs.map((s) => ({ ...(s.existingId ? { id: s.existingId } : {}), subCategoryId: s.subCategoryId, allottedAmount: Number(s.amount) || 0, parentCategoryId: parent }))
+              ? l.subs.map((s) => ({ ...(s.existingId ? { id: s.existingId } : {}), name: s.name, allottedAmount: Number(s.amount) || 0, parentCategoryId: parent }))
               : [];
           });
         const firstSubs = keepSubs((l) => l.existingId);
@@ -161,11 +160,11 @@ export const BudgetFormModal: React.FC<Props> = ({ open, budget, onClose, onSave
         const newLinesWithSubs = lines.filter((l) => !l.existingId && l.subs.length);
         if (newLinesWithSubs.length) {
           // Pass 2: now that the new lines exist, attach their subcategories.
-          const idByCategory = new Map((saved.categories ?? []).filter((c) => !c.parentCategoryId && c.categoryId).map((c) => [c.categoryId as string, c.id]));
+          const idByCategory = new Map((saved.categories ?? []).filter((c) => !c.parentCategoryId).map((c) => [nameKey(c.name), c.id]));
           const full = [
-            ...(saved.categories ?? []).filter((c) => !c.parentCategoryId).map((c) => ({ id: c.id, ...(c.categoryId ? { categoryId: c.categoryId } : { name: c.name }), allottedAmount: c.allottedAmount, scopedToSubCategories: !!c.scopedToSubCategories })),
-            ...(saved.categories ?? []).filter((c) => c.parentCategoryId).map((c) => ({ id: c.id, subCategoryId: c.subCategoryId ?? undefined, name: c.subCategoryId ? undefined : c.name, allottedAmount: c.allottedAmount, parentCategoryId: c.parentCategoryId as string })),
-            ...keepSubs((l) => (l.existingId ? undefined : idByCategory.get(l.categoryId ?? ''))),
+            ...(saved.categories ?? []).filter((c) => !c.parentCategoryId).map((c) => ({ id: c.id, name: c.name, allottedAmount: c.allottedAmount, scopedToSubCategories: !!c.scopedToSubCategories })),
+            ...(saved.categories ?? []).filter((c) => c.parentCategoryId).map((c) => ({ id: c.id, name: c.name, allottedAmount: c.allottedAmount, parentCategoryId: c.parentCategoryId as string })),
+            ...keepSubs((l) => (l.existingId ? undefined : idByCategory.get(nameKey(l.name)))),
           ];
           saved = await updateBudget(budget.id, { categories: full as never });
         }
@@ -231,9 +230,9 @@ export const BudgetFormModal: React.FC<Props> = ({ open, budget, onClose, onSave
           ) : (
             <div className="flex flex-wrap gap-2">
               {active.map((c) => {
-                const on = lines.some((l) => l.categoryId === c.id);
+                const on = lines.some((l) => nameKey(l.name) === nameKey(c.name));
                 return (
-                  <button key={c.id} type="button" role="checkbox" aria-checked={on} onClick={() => toggleCategory(c.id)}
+                  <button key={c.id} type="button" role="checkbox" aria-checked={on} onClick={() => toggleCategory(c.name)}
                     className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${on ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]' : 'border-[var(--color-border-primary)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)]/50'}`}>
                     <CategoryIcon icon={c.icon} color={c.color} size={20} /> {c.name}
                   </button>
@@ -250,16 +249,16 @@ export const BudgetFormModal: React.FC<Props> = ({ open, budget, onClose, onSave
 
         <div className="space-y-3">
           {lines.map((l) => {
-            const cat = l.categoryId ? categories.find((c) => c.id === l.categoryId) : undefined;
-            const subs = (cat?.subCategories ?? []).filter((s) => s.isActive || l.subs.some((x) => x.subCategoryId === s.id));
+            const cat = categories.find((c) => nameKey(c.name) === nameKey(l.name));
+            const subs = (cat?.subCategories ?? []).filter((s) => s.isActive || l.subs.some((x) => nameKey(x.name) === nameKey(s.name)));
             return (
-              <div key={l.existingId ?? l.categoryId ?? l.legacyName} className="rounded-xl border border-[var(--color-border-primary)] p-3">
+              <div key={l.existingId ?? nameKey(l.name)} className="rounded-xl border border-[var(--color-border-primary)] p-3">
                 <div className="flex items-center gap-3">
                   <CategoryIcon icon={cat?.icon} color={cat?.color} size={32} />
-                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--color-text-primary)]">{cat?.name ?? l.legacyName}</span>
-                  <label className="sr-only" htmlFor={`bd-line-${l.categoryId ?? l.legacyName}`}>Amount for {cat?.name ?? l.legacyName}</label>
-                  <input id={`bd-line-${l.categoryId ?? l.legacyName}`} inputMode="decimal" value={l.amount} onChange={(e) => patch(l, { amount: e.target.value })} placeholder="₹ amount" className="w-28 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] px-3 py-1.5 text-right text-sm" />
-                  <button type="button" aria-label={`Remove ${cat?.name ?? l.legacyName}`} onClick={() => setLines((p) => p.filter((x) => x !== l))} className="rounded-lg px-2 py-1 text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-error-dark)]">Remove</button>
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--color-text-primary)]">{l.name}</span>
+                  <label className="sr-only" htmlFor={`bd-line-${nameKey(l.name)}`}>Amount for {l.name}</label>
+                  <input id={`bd-line-${nameKey(l.name)}`} inputMode="decimal" value={l.amount} onChange={(e) => patch(l, { amount: e.target.value })} placeholder="₹ amount" className="w-28 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] px-3 py-1.5 text-right text-sm" />
+                  <button type="button" aria-label={`Remove ${l.name}`} onClick={() => setLines((p) => p.filter((x) => x !== l))} className="rounded-lg px-2 py-1 text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-error-dark)]">Remove</button>
                 </div>
                 {cat && subs.length > 0 && (
                   <div className="mt-3 border-t border-dashed border-[var(--color-border-primary)] pt-3">
@@ -270,12 +269,12 @@ export const BudgetFormModal: React.FC<Props> = ({ open, budget, onClose, onSave
                     {(l.scoped || l.subs.length > 0) && (
                       <ul className="space-y-1.5 pl-1">
                         {subs.map((s) => {
-                          const picked = l.subs.find((x) => x.subCategoryId === s.id);
+                          const picked = l.subs.find((x) => nameKey(x.name) === nameKey(s.name));
                           return (
                             <li key={s.id} className="flex items-center gap-2">
-                              <input id={`bd-sub-${s.id}`} type="checkbox" checked={!!picked} onChange={(e) => patch(l, { subs: e.target.checked ? [...l.subs, { subCategoryId: s.id, amount: '' }] : l.subs.filter((x) => x.subCategoryId !== s.id) })} />
+                              <input id={`bd-sub-${s.id}`} type="checkbox" checked={!!picked} onChange={(e) => patch(l, { subs: e.target.checked ? [...l.subs, { name: s.name, amount: '' }] : l.subs.filter((x) => nameKey(x.name) !== nameKey(s.name)) })} />
                               <label htmlFor={`bd-sub-${s.id}`} className="flex-1 text-xs text-[var(--color-text-primary)]">{s.name}</label>
-                              <input aria-label={`Amount for ${s.name}`} inputMode="decimal" disabled={!picked} value={picked?.amount ?? ''} onChange={(e) => patch(l, { subs: l.subs.map((x) => (x.subCategoryId === s.id ? { ...x, amount: e.target.value } : x)) })} placeholder="₹" className="w-24 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] px-2.5 py-1 text-right text-xs disabled:opacity-40" />
+                              <input aria-label={`Amount for ${s.name}`} inputMode="decimal" disabled={!picked} value={picked?.amount ?? ''} onChange={(e) => patch(l, { subs: l.subs.map((x) => (nameKey(x.name) === nameKey(s.name) ? { ...x, amount: e.target.value } : x)) })} placeholder="₹" className="w-24 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] px-2.5 py-1 text-right text-xs disabled:opacity-40" />
                             </li>
                           );
                         })}
@@ -310,7 +309,7 @@ export const BudgetFormModal: React.FC<Props> = ({ open, budget, onClose, onSave
       onSaved={(saved) => {
         if (saved.type !== 'EXPENSE') return;
         setJustCreated((prev) => [...prev.filter((c) => c.id !== saved.id), saved]);
-        setLines((prev) => (prev.some((l) => l.categoryId === saved.id) ? prev : [...prev, { categoryId: saved.id, amount: '', scoped: false, subs: [] }]));
+        setLines((prev) => (prev.some((l) => nameKey(l.name) === nameKey(saved.name)) ? prev : [...prev, { name: saved.name, amount: '', scoped: false, subs: [] }]));
       }}
     />
     </>

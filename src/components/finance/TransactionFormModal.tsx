@@ -3,7 +3,7 @@ import { Lock, Plus } from 'lucide-react';
 import { Modal, fieldCls, labelCls } from '../common/Modal';
 import { Button } from '../ui/Button';
 import { useApi } from '../../hooks/useApi';
-import { useCategories } from '../../hooks/useCategories';
+import { nameKey, useCategories } from '../../hooks/useCategories';
 import { createTransaction, getBudgets, updateTransaction } from '../../services/finance.service';
 import { createCategory } from '../../services/category.service';
 import { useToast } from '../../context/ToastContext';
@@ -57,8 +57,9 @@ export const TransactionFormModal: React.FC<Props> = ({ open, transaction, defau
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
   const [mode, setMode] = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [subCategoryId, setSubCategoryId] = useState('');
+  // The category / sub-category are held (and sent) by NAME — the user's library names are unique.
+  const [categoryName, setCategoryName] = useState('');
+  const [subName, setSubName] = useState('');
   const [budgetId, setBudgetId] = useState('');
   const [lineId, setLineId] = useState('');
   const [busy, setBusy] = useState(false);
@@ -81,8 +82,8 @@ export const TransactionFormModal: React.FC<Props> = ({ open, transaction, defau
     setTitle(t?.description ?? t?.receiverName ?? t?.senderName ?? '');
     setNotes(t?.notes ?? '');
     setMode(t?.mode ?? '');
-    setCategoryId(t?.categoryId ?? '');
-    setSubCategoryId(t?.subCategoryId ?? '');
+    setCategoryName(!t || !t.category || nameKey(t.category) === 'uncategorized' ? '' : t.category);
+    setSubName(t?.subCategory ?? '');
     setBudgetId(t?.budgetId ?? defaultBudgetId ?? '');
     // Left on "Same as category": the transaction's category decides which budget line it counts against.
     setLineId('');
@@ -102,55 +103,54 @@ export const TransactionFormModal: React.FC<Props> = ({ open, transaction, defau
   const budget = eligibleBudgets.find((b) => b.id === budgetId) ?? null;
   const lines = useMemo(() => (budget?.categories ?? []).filter((c) => !c.parentCategoryId), [budget]);
   const chosenLine: BudgetCategoryRow | null = budget ? lines.find((l) => l.id === lineId) ?? null : null;
-  const lockedCategoryId = chosenLine?.categoryId ?? '';
-  const categoryLocked = !!chosenLine && !!lockedCategoryId;
+  const lockedCategory = chosenLine?.name ?? '';
+  const categoryLocked = !!chosenLine && !!lockedCategory;
 
   // Keep selections consistent when the budget / line changes.
   useEffect(() => {
     if (!open) return;
     /* eslint-disable react-hooks/set-state-in-effect */
-    if (categoryLocked && categoryId !== lockedCategoryId) {
-      setCategoryId(lockedCategoryId);
-      setSubCategoryId('');
+    if (categoryLocked && nameKey(categoryName) !== nameKey(lockedCategory)) {
+      setCategoryName(lockedCategory);
+      setSubName('');
     }
     if (lineId && budget && !chosenLine) setLineId('');
     if (budgetId && !budget && budgetsApi.data) setBudgetId(''); // chosen budget no longer eligible for this date
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [open, categoryLocked, lockedCategoryId, categoryId, budgetId, budget, budgetsApi.data, lineId, chosenLine]);
+  }, [open, categoryLocked, lockedCategory, categoryName, budgetId, budget, budgetsApi.data, lineId, chosenLine]);
 
-  const category = categories.find((c) => c.id === categoryId) ?? null;
-  const norm = (v?: string | null) => (v ?? '').trim().toLowerCase();
+  const category = categories.find((c) => nameKey(c.name) === nameKey(categoryName)) ?? null;
   // The line this transaction will count against when none is named: the one for its category.
   const autoLine: BudgetCategoryRow | null =
     budget && !chosenLine && category
-      ? lines.find((l) => l.categoryId === category.id || (!l.categoryId && norm(l.name) === norm(category.name))) ?? null
+      ? lines.find((l) => nameKey(l.name) === nameKey(category.name)) ?? null
       : null;
   const line = chosenLine ?? autoLine;
   const lineSubs = useMemo(() => (line ? (budget?.categories ?? []).filter((c) => c.parentCategoryId === line.id) : []), [budget, line]);
   const willAddToBudget = !!budget && !chosenLine && !!category && !autoLine;
   const scoped = !!line?.scopedToSubCategories;
   const subOptions = useMemo(() => {
-    const active = (category?.subCategories ?? []).filter((s) => s.isActive || s.id === subCategoryId);
+    const active = (category?.subCategories ?? []).filter((s) => s.isActive || nameKey(s.name) === nameKey(subName));
     if (!scoped) return active;
-    const allowed = new Set(lineSubs.map((s) => s.subCategoryId).filter(Boolean));
-    return active.filter((s) => allowed.has(s.id));
-  }, [category, scoped, lineSubs, subCategoryId]);
+    const allowed = new Set(lineSubs.map((s) => nameKey(s.name)));
+    return active.filter((s) => allowed.has(nameKey(s.name)));
+  }, [category, scoped, lineSubs, subName]);
   const categoryOptions = useMemo(
-    () => categories.filter((c) => c.isActive || c.id === categoryId),
-    [categories, categoryId],
+    () => categories.filter((c) => c.isActive || nameKey(c.name) === nameKey(categoryName)),
+    [categories, categoryName],
   );
 
   function changeType(next: CategoryType) {
     if (next === type) return;
     setType(next);
-    setCategoryId('');
-    setSubCategoryId('');
+    setCategoryName('');
+    setSubName('');
     setBudgetId('');
     setLineId('');
   }
-  function changeCategory(id: string) {
-    setCategoryId(id);
-    setSubCategoryId(''); // a sub-category always belongs to exactly one category
+  function changeCategory(name: string) {
+    setCategoryName(name);
+    setSubName(''); // a sub-category always belongs to exactly one category
   }
 
   const amountNum = Number(amount);
@@ -158,8 +158,8 @@ export const TransactionFormModal: React.FC<Props> = ({ open, transaction, defau
   if (!amount || !Number.isFinite(amountNum) || amountNum <= 0) problems.amount = 'Enter an amount greater than zero';
   else if (!/^\d+(\.\d{1,2})?$/.test(amount.trim())) problems.amount = 'Use at most two decimal places';
   if (!date) problems.date = 'Pick a date';
-  if (budget && !chosenLine && !categoryId && lines.length > 1) problems.category = 'Pick a category — or a budget category';
-  if (scoped && !subCategoryId) problems.sub = 'This budget tracks sub-categories — pick one';
+  if (budget && !chosenLine && !categoryName && lines.length > 1) problems.category = 'Pick a category — or a budget category';
+  if (scoped && !subName) problems.sub = 'This budget tracks sub-categories — pick one';
 
   async function quickCreate() {
     const name = (quickName ?? '').trim();
@@ -168,8 +168,8 @@ export const TransactionFormModal: React.FC<Props> = ({ open, transaction, defau
     try {
       const created = await createCategory({ name, type });
       toast.success(created.restored ? `Restored “${created.name}”` : `Created “${created.name}”`);
-      setCategoryId(created.id);
-      setSubCategoryId('');
+      setCategoryName(created.name);
+      setSubName('');
       setQuickName(null);
     } catch (err) {
       setError(apiErrorMessage(err, 'Could not create the category.'));
@@ -186,8 +186,8 @@ export const TransactionFormModal: React.FC<Props> = ({ open, transaction, defau
     setError('');
     try {
       const taxonomy = {
-        categoryId: categoryId || null,
-        subCategoryId: categoryId ? subCategoryId || null : null,
+        category: categoryName || null,
+        subCategory: categoryName ? subName || null : null,
         budgetId: type === 'EXPENSE' && budget ? budget.id : null,
         // Only sent when the user named a budget category; otherwise the server uses the transaction's category.
         budgetCategoryId: type === 'EXPENSE' && budget && chosenLine ? chosenLine.id : null,
@@ -281,7 +281,7 @@ export const TransactionFormModal: React.FC<Props> = ({ open, transaction, defau
         {budget && lines.length > 0 && (
           <div>
             <label htmlFor="tx-line" className={labelCls}>Budget category <span className="font-normal normal-case text-[var(--color-text-tertiary)]">(optional)</span></label>
-            <select id="tx-line" value={chosenLine?.id ?? ''} onChange={(e) => { setLineId(e.target.value); setSubCategoryId(''); }} className={fieldCls}>
+            <select id="tx-line" value={chosenLine?.id ?? ''} onChange={(e) => { setLineId(e.target.value); setSubName(''); }} className={fieldCls}>
               <option value="">Same as category</option>
               {lines.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
             </select>
@@ -302,9 +302,9 @@ export const TransactionFormModal: React.FC<Props> = ({ open, transaction, defau
             <label htmlFor="tx-cat" className={labelCls}>
               Category {categoryLocked && <Lock className="ml-1 inline h-3 w-3" aria-label="Set by the budget" />}
             </label>
-            <select id="tx-cat" value={categoryId} disabled={categoryLocked || catsLoading} onChange={(e) => changeCategory(e.target.value)} className={fieldCls}>
+            <select id="tx-cat" value={category?.name ?? categoryName} disabled={categoryLocked || catsLoading} onChange={(e) => changeCategory(e.target.value)} className={fieldCls}>
               <option value="">{catsLoading ? 'Loading…' : 'Uncategorised'}</option>
-              {categoryOptions.map((c) => <option key={c.id} value={c.id}>{c.name}{c.isActive ? '' : ' (archived)'}</option>)}
+              {categoryOptions.map((c) => <option key={c.id} value={c.name}>{c.name}{c.isActive ? '' : ' (archived)'}</option>)}
             </select>
             {categoryLocked && <p className="mt-1 text-xs text-[var(--color-text-tertiary)]">Set by the budget category you chose.</p>}
             <p role={err('category') ? 'alert' : undefined} className="mt-1 text-xs text-[var(--color-error-dark)]">{err('category')}</p>
@@ -314,9 +314,9 @@ export const TransactionFormModal: React.FC<Props> = ({ open, transaction, defau
           </div>
           <div>
             <label htmlFor="tx-sub" className={labelCls}>Subcategory</label>
-            <select id="tx-sub" value={subCategoryId} disabled={!categoryId || subOptions.length === 0} onChange={(e) => setSubCategoryId(e.target.value)} aria-invalid={!!err('sub')} className={fieldCls}>
-              <option value="">{!categoryId ? 'Pick a category first' : subOptions.length === 0 ? 'None available' : scoped ? 'Select…' : 'None'}</option>
-              {subOptions.map((s) => <option key={s.id} value={s.id}>{s.name}{s.isActive ? '' : ' (archived)'}</option>)}
+            <select id="tx-sub" value={subName} disabled={!categoryName || subOptions.length === 0} onChange={(e) => setSubName(e.target.value)} aria-invalid={!!err('sub')} className={fieldCls}>
+              <option value="">{!categoryName ? 'Pick a category first' : subOptions.length === 0 ? 'None available' : scoped ? 'Select…' : 'None'}</option>
+              {subOptions.map((s) => <option key={s.id} value={s.name}>{s.name}{s.isActive ? '' : ' (archived)'}</option>)}
             </select>
             <p role={err('sub') ? 'alert' : undefined} className="mt-1 min-h-4 text-xs text-[var(--color-error-dark)]">{err('sub')}</p>
           </div>

@@ -21,9 +21,7 @@ export interface Transaction {
   type: TransactionDirection;
   category: string;
   subCategory?: string | null;
-  /** The user's own category / sub-category / budget (null = uncategorised / unlinked). */
-  categoryId?: string | null;
-  subCategoryId?: string | null;
+  /** The budget (and line) this counts against; null = not linked. Categories are carried by NAME above. */
   budgetId?: string | null;
   budgetCategoryId?: string | null;
   budgetSubCategoryId?: string | null;
@@ -151,6 +149,9 @@ export interface FinancialConsent {
 
 export interface CategoryBreakdown {
   name: FinanceCategory | string;
+  /** The category's own colour / icon key (see data/categoryIcons). Absent for uncategorised spending. */
+  color?: string | null;
+  icon?: string | null;
   amount: number;
   percentage: number;
 }
@@ -236,9 +237,6 @@ export interface BudgetCategoryRow {
   colorHex: string;
   parentCategoryId: string | null;
   allottedAmount: number;
-  /** Link into the user's own taxonomy (top-level lines → category, sub lines → subcategory). */
-  categoryId?: string | null;
-  subCategoryId?: string | null;
   scopedToSubCategories?: boolean;
 }
 
@@ -258,15 +256,13 @@ export interface Budget {
 
 /** What we send when creating/updating a budget. */
 export interface BudgetSubCategoryInput {
-  name?: string;
-  /** The user's own sub-category (name then comes from it). */
-  subCategoryId?: string;
+  /** The sub-category NAME (a new one is added to the user's library). */
+  name: string;
   allottedAmount: number;
 }
 export interface BudgetCategoryInput {
-  name?: string;
-  /** The user's own category (name then comes from it). */
-  categoryId?: string;
+  /** The category NAME (a new one is added to the user's library). */
+  name: string;
   allottedAmount: number;
   colorHex?: string;
   iconResId?: string;
@@ -286,7 +282,6 @@ export type UpdateBudgetPayload = Partial<CreateBudgetPayload>;
 export interface BudgetProgressSub {
   id: string;
   name: string;
-  subCategoryId?: string | null;
   transactionCount?: number;
   allocated: number;
   spent: number;
@@ -297,7 +292,6 @@ export interface BudgetProgressSub {
 export interface BudgetProgressCategory {
   id: string;
   category: string;
-  categoryId?: string | null;
   transactionCount?: number;
   allocated: number;
   spent: number;

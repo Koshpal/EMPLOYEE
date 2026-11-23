@@ -108,10 +108,9 @@ export const getSubscriptions = async (): Promise<DetectedSubscription[]> => {
 
 export interface TransactionFilters {
   type?: string;
-  /** legacy text "contains" filter */
+  /** Category / sub-category NAMES. */
   category?: string;
-  categoryId?: string;
-  subCategoryId?: string;
+  subCategory?: string;
   budgetId?: string;
   uncategorized?: boolean;
   from?: string;
@@ -143,8 +142,9 @@ export interface TransactionWritePayload {
   receiverName?: string | null;
   senderName?: string | null;
   mode?: string | null;
-  categoryId?: string | null;
-  subCategoryId?: string | null;
+  /** Category / sub-category NAMES (null / omitted = uncategorised). */
+  category?: string | null;
+  subCategory?: string | null;
   budgetId?: string | null;
   budgetCategoryId?: string | null;
   budgetSubCategoryId?: string | null;
@@ -170,8 +170,8 @@ export const updateTransaction = async (id: string, payload: TransactionWritePay
 
 export const categorizeTransactions = async (payload: {
   transactionIds: string[];
-  categoryId: string;
-  subCategoryId?: string | null;
+  category: string;
+  subCategory?: string | null;
   budgetId?: string | null;
 }): Promise<{ updated: number; warnings: string[] }> => {
   const res = await axiosInstance.post('/transactions/categorize', payload);
@@ -231,7 +231,7 @@ export const deleteGoal = async (goalId: string): Promise<void> => {
 export interface BudgetListFilters {
   isActive?: boolean;
   period?: BudgetPeriodFilter;
-  categoryId?: string;
+  category?: string;
   status?: 'ON_TRACK' | 'NEAR_LIMIT' | 'EXCEEDED';
   activeOn?: string;
   includeProgress?: boolean;

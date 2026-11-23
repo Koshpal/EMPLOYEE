@@ -6,10 +6,11 @@ import {
 } from '../services/finance.service';
 import { TransactionStream, type StreamStatus } from '../services/transactionStream';
 import type { Transaction, TransactionStreamEvent } from '../types/finance.types';
+import { nameKey } from './useCategories';
 
 type Filters = Pick<
   TransactionFilters,
-  'type' | 'category' | 'categoryId' | 'subCategoryId' | 'budgetId' | 'uncategorized' | 'from' | 'to' | 'search'
+  'type' | 'category' | 'subCategory' | 'budgetId' | 'uncategorized' | 'from' | 'to' | 'search'
 >;
 
 const byDateDesc = (a: Transaction, b: Transaction) =>
@@ -37,12 +38,10 @@ export function useTransactionStream(filters: Filters) {
   const matches = useCallback((t: Transaction): boolean => {
     const f = filtersRef.current;
     if (f.type && t.type !== f.type) return false;
-    if (f.category && (t.category ?? '').toLowerCase() !== f.category.toLowerCase())
-      return false;
-    if (f.categoryId && t.categoryId !== f.categoryId) return false;
-    if (f.subCategoryId && t.subCategoryId !== f.subCategoryId) return false;
+    if (f.category && nameKey(t.category) !== nameKey(f.category)) return false;
+    if (f.subCategory && nameKey(t.subCategory) !== nameKey(f.subCategory)) return false;
     if (f.budgetId && t.budgetId !== f.budgetId) return false;
-    if (f.uncategorized && t.categoryId) return false;
+    if (f.uncategorized && nameKey(t.category) !== 'uncategorized') return false;
     // Day bounds are yyyy-mm-dd in the user's local calendar.
     const day = (d: string) => {
       const x = new Date(d);
@@ -153,7 +152,7 @@ export function useTransactionStream(filters: Filters) {
     return () => {
       cancelled = true;
     };
-  }, [filters.type, filters.category, filters.categoryId, filters.subCategoryId, filters.budgetId, filters.uncategorized, filters.from, filters.to, filters.search]);
+  }, [filters.type, filters.category, filters.subCategory, filters.budgetId, filters.uncategorized, filters.from, filters.to, filters.search]);
 
   // One long-lived stream for the page's lifetime.
   useEffect(() => {

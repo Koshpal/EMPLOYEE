@@ -21,22 +21,23 @@ export const BulkCategorizeBar: React.FC<Props> = ({ transactions, onDone, onCan
   const mixed = types.size > 1;
   const type = transactions[0]?.type === 'INCOME' ? 'INCOME' : 'EXPENSE';
   const { categories } = useCategories({ type });
-  const [categoryId, setCategoryId] = useState('');
-  const [subCategoryId, setSubCategoryId] = useState('');
+  // Held (and sent) by NAME: the user's category names are unique.
+  const [categoryName, setCategoryName] = useState('');
+  const [subName, setSubName] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const category = categories.find((c) => c.id === categoryId);
+  const category = categories.find((c) => c.name === categoryName);
   const tooMany = transactions.length > MAX;
 
   async function apply() {
-    if (!categoryId || mixed || tooMany) return;
+    if (!categoryName || mixed || tooMany) return;
     setBusy(true);
     setError('');
     try {
       const r = await categorizeTransactions({
         transactionIds: transactions.map((t) => t.id),
-        categoryId,
-        subCategoryId: subCategoryId || null,
+        category: categoryName,
+        subCategory: subName || null,
       });
       toast.success(`${r.updated} transaction${r.updated === 1 ? '' : 's'} categorised`);
       onDone();
@@ -58,19 +59,19 @@ export const BulkCategorizeBar: React.FC<Props> = ({ transactions, onDone, onCan
           <p role="alert" className="text-xs text-[var(--color-error-dark)] sm:flex-1">Select at most {MAX} at a time.</p>
         ) : (
           <>
-            <select aria-label="Category" value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setSubCategoryId(''); }} className="h-10 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] px-3 text-sm sm:flex-1">
+            <select aria-label="Category" value={categoryName} onChange={(e) => { setCategoryName(e.target.value); setSubName(''); }} className="h-10 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] px-3 text-sm sm:flex-1">
               <option value="">Choose a category…</option>
-              {categories.filter((c) => c.isActive).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {categories.filter((c) => c.isActive).map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
             </select>
-            <select aria-label="Subcategory" value={subCategoryId} disabled={!category || category.subCategories.length === 0} onChange={(e) => setSubCategoryId(e.target.value)} className="h-10 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] px-3 text-sm disabled:opacity-50 sm:flex-1">
+            <select aria-label="Subcategory" value={subName} disabled={!category || category.subCategories.length === 0} onChange={(e) => setSubName(e.target.value)} className="h-10 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] px-3 text-sm disabled:opacity-50 sm:flex-1">
               <option value="">No subcategory</option>
-              {(category?.subCategories ?? []).filter((s) => s.isActive).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              {(category?.subCategories ?? []).filter((s) => s.isActive).map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
             </select>
           </>
         )}
         <div className="flex gap-2">
           <Button variant="outline" onClick={onCancel} disabled={busy}>Cancel</Button>
-          <Button onClick={() => void apply()} loading={busy} disabled={!categoryId || mixed || tooMany}>Apply</Button>
+          <Button onClick={() => void apply()} loading={busy} disabled={!categoryName || mixed || tooMany}>Apply</Button>
         </div>
       </div>
       {error && <p role="alert" className="mx-auto mt-2 max-w-3xl text-xs text-[var(--color-error-dark)]">{error}</p>}
