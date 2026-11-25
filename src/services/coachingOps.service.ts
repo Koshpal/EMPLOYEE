@@ -7,10 +7,12 @@ export interface HomeworkItem {
   answers: Record<string, string | number>; submittedAt: string | null; reviewNote: string | null;
   template: { title: string; description: string | null; category?: string; estimatedMinutes?: number | null; fields: WorksheetField[] };
 }
+/** One session of the programme as the employee sees it: what it is for and what to do afterwards. */
+export interface RoadmapSession { sessionNumber: number; title: string; minutes: number; theme: string | null; summary: string; homework: string | null; state: 'DONE' | 'NEXT' | 'UPCOMING' }
 export interface CoachingOverview {
   enrolled: boolean; consentActive: boolean;
   coach: { id: string; name: string; photo: string | null; since: string } | null;
-  program: { name: string; status: string; totalSessions: number; sessionsCompleted: number; nextSessionNumber: number | null } | null;
+  program: { name: string; status: string; totalSessions: number; sessionsCompleted: number; nextSessionNumber: number | null; roadmap: RoadmapSession[] } | null;
   lastSession: { sessionNumber: number; completedAt: string | null } | null;
   nextBooking: { id: string; slotStart: string; slotEnd: string; meetingLink: string | null } | null;
   needsToBook: boolean;

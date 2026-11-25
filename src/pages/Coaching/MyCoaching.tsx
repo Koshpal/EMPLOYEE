@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Layout } from '../../components/common/Layout';
-import { apiMessage, coachingOpsService, type ActionItemRow, type CoachingOverview, type HomeworkItem, type SharedResult, type WorksheetField } from '../../services/coachingOps.service';
+import { apiMessage, coachingOpsService, type ActionItemRow, type CoachingOverview, type HomeworkItem, type RoadmapSession, type SharedResult, type WorksheetField } from '../../services/coachingOps.service';
 
 type Tab = 'overview' | 'actions' | 'shared' | 'homework' | 'reminders';
 const fmtWhen = (iso: string) => new Date(iso).toLocaleString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' });
@@ -17,6 +17,33 @@ const Values = ({ value }: { value: unknown }) => {
 
 
 const card = 'rounded-2xl bg-[var(--color-bg-card)] p-5 shadow-sm';
+
+/** The programme at a glance: what each session is for and the one thing to do between sessions. Never shows the coach's script. */
+function Roadmap({ sessions }: { sessions: RoadmapSession[] }) {
+  if (!sessions.length) return null;
+  const badge = (st: RoadmapSession['state']) => st === 'DONE'
+    ? <span className="rounded-full bg-[var(--color-success-bg)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-success-darkest)]">Done</span>
+    : st === 'NEXT' ? <span className="rounded-full bg-[var(--color-info-bg)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-primary)]">Up next</span>
+    : <span className="rounded-full bg-[var(--color-bg-tertiary)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-text-secondary)]">Coming up</span>;
+  return (
+    <section className={card} aria-label="Your programme">
+      <h3 className="text-base font-semibold text-[var(--color-text-primary)]">Your programme</h3>
+      <p className="mt-1 text-sm text-[var(--color-text-secondary)]">Each session is about {sessions[0].minutes} minutes, with one small task to do afterwards.</p>
+      <ol className="mt-3 flex flex-col gap-3">
+        {sessions.map((s) => (
+          <li key={s.sessionNumber} className={`rounded-xl border p-4 ${s.state === 'NEXT' ? 'border-[var(--color-primary)]' : 'border-[var(--color-border-primary)]'}`}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-semibold text-[var(--color-text-primary)]">Session {s.sessionNumber} · {s.title}</p>{badge(s.state)}
+            </div>
+            {s.theme && <p className="mt-1 text-sm italic text-[var(--color-text-secondary)]">“{s.theme}”</p>}
+            {s.summary && <p className="mt-1 text-sm text-[var(--color-text-secondary)]">{s.summary}</p>}
+            {s.homework && <p className="mt-2 rounded-lg bg-[var(--color-bg-secondary)] px-3 py-2 text-sm text-[var(--color-text-primary)]"><strong>After this session:</strong> {s.homework}</p>}
+          </li>))}
+      </ol>
+      <p className="mt-3 text-xs text-[var(--color-text-tertiary)]">What you share with your coach stays private. Your company only sees overall usage numbers, never your details.</p>
+    </section>
+  );
+}
 
 function Overview({ data, error, go }: { data: CoachingOverview | null; error: string | null; go: (t: Tab) => void }) {
   if (!data) return error ? <p role="alert" className="text-sm text-[var(--color-error-dark)]">{error}</p> : <div className="h-40 animate-pulse rounded-2xl bg-[var(--color-bg-tertiary)]" aria-busy="true" />;
@@ -63,11 +90,12 @@ function Overview({ data, error, go }: { data: CoachingOverview | null; error: s
         {!todo.length ? <p className="mt-2 text-sm text-[var(--color-text-secondary)]">You are all caught up.</p> : (
           <ul className="mt-2 flex flex-col gap-1">{todo.map((x) => <li key={x.text}><button onClick={() => go(x.tab)} className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-[var(--color-bg-secondary)]"><span><strong>{x.n}</strong> {x.text}{x.n > 1 ? 's' : ''}</span><span aria-hidden className="text-[var(--color-text-tertiary)]">›</span></button></li>)}</ul>)}
       </section>
+      {p && <Roadmap sessions={p.roadmap ?? []} />}
     </div>
   );
 }
 
-function ActionPlan({ onChanged }: { onChanged: () => void }) {
+function ActionPlan({ onChanged, next }: { onChanged: () => void; next: CoachingOverview['nextBooking'] | undefined }) {
   const [items, setItems] = useState<ActionItemRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -81,6 +109,7 @@ function ActionPlan({ onChanged }: { onChanged: () => void }) {
   if (!items.length) return <p className={`${card} text-sm text-[var(--color-text-secondary)]`}>Your coach will record the steps you agree on after each session, and they will appear here.</p>;
   return (
     <div className="flex flex-col gap-3">
+      <p className="text-sm text-[var(--color-text-secondary)]">{next ? <>Our next session: <strong className="text-[var(--color-text-primary)]">{fmtWhen(next.slotStart)} IST</strong></> : 'Our next session: not booked yet.'} Tick a step when you have done it.</p>
       {error && <p role="alert" className="rounded-xl bg-[var(--color-error-bg)] px-4 py-3 text-sm text-[var(--color-error-dark)]">{error}</p>}
       <ul className="flex flex-col gap-3">
         {items.map((i) => (
@@ -264,7 +293,7 @@ export default function MyCoaching() {
         <div role="tablist" className="no-print flex gap-1 overflow-x-auto rounded-xl bg-[var(--color-bg-tertiary)] p-1">
           {tabs.map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={`flex-1 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium ${tab === k ? 'bg-[var(--color-bg-card)] text-[var(--color-primary)] shadow-sm' : 'text-[var(--color-text-secondary)]'}`}>{l}</button>)}
         </div>
-        {tab === 'overview' ? <Overview data={overview} error={ovError} go={setTab} /> : tab === 'actions' ? <ActionPlan onChanged={loadOverview} /> : tab === 'shared' ? <Shared /> : tab === 'homework' ? <Homework /> : <Reminders />}
+        {tab === 'overview' ? <Overview data={overview} error={ovError} go={setTab} /> : tab === 'actions' ? <ActionPlan onChanged={loadOverview} next={overview?.nextBooking} /> : tab === 'shared' ? <Shared /> : tab === 'homework' ? <Homework /> : <Reminders />}
       </div>
     </Layout>
   );
