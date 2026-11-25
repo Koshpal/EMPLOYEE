@@ -33,8 +33,12 @@ const Categories = lazy(() => import('./pages/Finance/Categories'));
 const SpendingInsights = lazy(() => import('./pages/Finance/SpendingInsights'));
 const CategoryDetail = lazy(() => import('./pages/Finance/CategoryDetail'));
 
+import PageMeta from './components/PageMeta';
+
 function App() {
   return (
+    <>
+    <PageMeta />
     <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/login" element={<Login />} />
@@ -70,6 +74,7 @@ function App() {
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Suspense>
+    </>
   );
 }
 
