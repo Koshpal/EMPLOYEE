@@ -20,14 +20,14 @@ interface PageMetaEntry {
 const DEFAULT_ENTRY: PageMetaEntry = {
   path: '/',
   title: 'Employee Portal',
-  description: 'Your Koshpal money space: track spending, set budgets and goals, and book sessions with a certified financial coach.',
+  description: 'Your Koshpal employee financial wellness space: track spending, set budgets and goals, and book sessions with a certified financial coach.',
 };
 
 export const PAGES: PageMetaEntry[] = [
-  { path: '/login', title: 'Log In', description: 'Sign in to Koshpal to see your money, goals and financial coaching sessions.' },
+  { path: '/login', title: 'Log In', description: 'Sign in to Koshpal, your employer-paid financial wellness program: see your money, goals and financial coaching sessions.' },
   { path: '/forgot-password', title: 'Forgot Password', description: 'Reset your Koshpal password. Enter your email and we will send you a reset link.' },
-  { path: '/dashboard', title: 'Dashboard', description: 'Your money at a glance: spending, budgets, goals and your next coaching session.' },
-  { path: '/coaches', title: 'Find a Coach', description: 'Browse certified financial coaches and book a one-to-one session.' },
+  { path: '/dashboard', title: 'Dashboard', description: 'Your money at a glance in your employee financial wellness program: spending, budgets, goals and your next coaching session.' },
+  { path: '/coaches', title: 'Find a Coach', description: 'Browse certified financial coaches (CFPs and CAs) and book a private one-to-one session, paid for by your employer.' },
   { path: '/coaches/:id', title: 'Coach Profile', description: 'A coach’s background, areas of expertise and available session times.' },
   { path: '/sessions', title: 'My Sessions', description: 'Your upcoming and past financial coaching sessions.' },
   { path: '/coaching', title: 'My Coaching', description: 'Your coaching programme: sessions, action plan, homework and progress.' },
@@ -84,7 +84,7 @@ export default function PageMeta() {
   const { pathname } = useLocation();
   useEffect(() => {
     const { entry, canonical } = resolvePageMeta(pathname);
-    const title = entry === DEFAULT_ENTRY ? 'Koshpal Employee Portal' : `${entry.title} | ${PORTAL}`;
+    const title = entry === DEFAULT_ENTRY ? 'Koshpal Employee Portal: Financial Wellness Program' : `${entry.title} | ${PORTAL}`;
     document.title = title;
     setMeta('name', 'description', entry.description);
     setMeta('name', 'robots', 'index, follow');
