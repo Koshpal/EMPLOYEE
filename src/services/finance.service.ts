@@ -153,9 +153,9 @@ export interface TransactionWritePayload {
 export const createTransaction = async (
   payload: TransactionWritePayload & { amount: number; type: 'INCOME' | 'EXPENSE'; transactionDate: string },
 ): Promise<Transaction> => {
-  // A client id makes a retry after a lost response idempotent on the server.
-  const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `web-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  const res = await axiosInstance.post('/transactions', { id, origin: 'MANUAL', ...payload });
+  // A retry key makes a retry after a lost response idempotent on the server, which generates the id itself.
+  const clientRequestId = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `web-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const res = await axiosInstance.post('/transactions', { clientRequestId, origin: 'MANUAL', ...payload });
   invalidateAfter('transaction');
   return res.data as Transaction;
 };
