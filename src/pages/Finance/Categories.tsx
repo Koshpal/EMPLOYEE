@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Archive, ArchiveRestore, ArrowDown, ArrowUp, ListTree, Pencil, Plus, RotateCcw, Search } from 'lucide-react';
+import { Archive, ArchiveRestore, ListTree, Pencil, Plus, RotateCcw, Search } from 'lucide-react';
 import { Layout } from '../../components/common/Layout';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { Button } from '../../components/ui/Button';
@@ -10,7 +10,7 @@ import { CategoryFormModal } from '../../components/categories/CategoryFormModal
 import { SubCategoryManager } from '../../components/categories/SubCategoryManager';
 import { CategoryIcon } from '../../data/categoryIcons';
 import { useCategories } from '../../hooks/useCategories';
-import { archiveCategory, reorderCategories, restoreDefaultCategories, updateCategory } from '../../services/category.service';
+import { archiveCategory, restoreDefaultCategories, updateCategory } from '../../services/category.service';
 import { useToast } from '../../context/ToastContext';
 import { apiErrorMessage } from '../../utils/apiError';
 import type { Category, CategoryType } from '../../types/spending.types';
@@ -44,7 +44,6 @@ export default function Categories() {
       .filter((c) => !q || c.name.toLowerCase().includes(q) || c.subCategories.some((s) => s.name.toLowerCase().includes(q)))
       .sort((a, b) => Number(b.isActive) - Number(a.isActive) || a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
   }, [ofType, query, showArchived]);
-  const activeOrder = useMemo(() => ofType.filter((c) => c.isActive).sort((a, b) => a.sortOrder - b.sortOrder).map((c) => c.id), [ofType]);
   const subTarget = categories.find((c) => c.id === subFor) ?? null;
 
   async function confirmArchive() {
@@ -69,22 +68,6 @@ export default function Categories() {
       toast.success(`“${c.name}” restored`);
     } catch (err) {
       toast.error(apiErrorMessage(err, 'Could not restore the category.'));
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  async function move(id: string, dir: -1 | 1) {
-    const ids = [...activeOrder];
-    const i = ids.indexOf(id);
-    const j = i + dir;
-    if (i < 0 || j < 0 || j >= ids.length) return;
-    [ids[i], ids[j]] = [ids[j], ids[i]];
-    setBusyId(id);
-    try {
-      await reorderCategories(ids);
-    } catch (err) {
-      toast.error(apiErrorMessage(err, 'Could not save the new order.'));
     } finally {
       setBusyId(null);
     }
@@ -178,7 +161,6 @@ export default function Categories() {
         ) : (
           <ul className="flex flex-col gap-3" aria-label={`${tab === 'EXPENSE' ? 'Expense' : 'Income'} categories`}>
             {visible.map((c) => {
-              const idx = activeOrder.indexOf(c.id);
               const subs = c.subCategories.filter((s) => s.isActive);
               return (
                 <li key={c.id} className={`rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-card)] p-3.5 ${c.isActive ? '' : 'opacity-70'}`}>
@@ -203,8 +185,6 @@ export default function Categories() {
                     <div className="flex shrink-0 items-center">
                       {c.isActive ? (
                         <>
-                          <button aria-label={`Move ${c.name} up`} disabled={idx <= 0 || busyId !== null} onClick={() => void move(c.id, -1)} className="rounded-lg p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)] disabled:opacity-30"><ArrowUp className="h-4 w-4" /></button>
-                          <button aria-label={`Move ${c.name} down`} disabled={idx === activeOrder.length - 1 || busyId !== null} onClick={() => void move(c.id, 1)} className="rounded-lg p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)] disabled:opacity-30"><ArrowDown className="h-4 w-4" /></button>
                           <button aria-label={`Manage subcategories of ${c.name}`} onClick={() => setSubFor(c.id)} className="rounded-lg p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-primary)]"><ListTree className="h-4 w-4" /></button>
                           <button aria-label={`Edit ${c.name}`} onClick={() => { setEditing(c); setFormOpen(true); }} className="rounded-lg p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-primary)]"><Pencil className="h-4 w-4" /></button>
                           <button aria-label={`Archive ${c.name}`} onClick={() => { setArchiveError(''); setToArchive(c); }} className="rounded-lg p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-error-dark)]"><Archive className="h-4 w-4" /></button>

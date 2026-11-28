@@ -39,11 +39,6 @@ export async function archiveCategory(id: string): Promise<{ retainedTransaction
   return res.data;
 }
 
-export async function reorderCategories(orderedIds: string[]): Promise<void> {
-  await axiosInstance.post('/categories/reorder', { orderedIds });
-  invalidateAfter('category');
-}
-
 export async function restoreDefaultCategories(): Promise<RestoreDefaultsResult> {
   const res = await axiosInstance.post<RestoreDefaultsResult>('/categories/restore-defaults');
   invalidateAfter('category');

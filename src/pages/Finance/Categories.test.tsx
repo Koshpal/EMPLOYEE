@@ -12,7 +12,7 @@ vi.mock('../../services/category.service', () => ({
   listCategories: (...a: unknown[]) => listCategories(...a),
   archiveCategory: (...a: unknown[]) => archiveCategory(...a),
   restoreDefaultCategories: (...a: unknown[]) => restoreDefaultCategories(...a),
-  reorderCategories: vi.fn(), updateCategory: vi.fn(), createCategory: vi.fn(),
+  updateCategory: vi.fn(), createCategory: vi.fn(),
 }));
 vi.mock('../../context/ToastContext', () => ({ useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }) }));
 // The shell (sidebar, header, auth) is not what is under test.
